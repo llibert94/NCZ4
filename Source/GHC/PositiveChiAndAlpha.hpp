@@ -47,7 +47,8 @@ class PositiveChiAndAlpha
 	data_t det_g = TensorAlgebra::compute_determinant_sym(vars.g);
 	data_t chi = pow(det_g, -1. / (double)GR_SPACEDIM);
 
-	FOR(i,j) vars.g[i][j] = vars.g[i][j] * simd_max(chi, m_min_chi) / chi;
+	data_t chi_min = simd_max(chi, m_min_chi);
+	FOR(i,j) vars.g[i][j] = vars.g[i][j] * chi / chi_min;
         vars.lapse = simd_max(vars.lapse, m_min_lapse);
 
 	current_cell.store_vars(vars);

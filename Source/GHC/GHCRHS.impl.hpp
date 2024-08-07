@@ -88,6 +88,35 @@ void GHCRHS<gauge_t, deriv_t>::rhs_equation(
         }
     }
 
+    // add diffusion term
+        
+    data_t diffCoeff = 0.;
+    FOR(i, j) {
+        FOR(k) { diffCoeff += pow(d1.g[i][j][k], 2);}
+    }
+    diffCoeff = pow(sqrt(2. * diffCoeff / ((double)GR_SPACEDIM) * ((double)GR_SPACEDIM - 1)),
+                        m_params.lapidusPower) * pow(m_deriv.m_dx, m_params.lapidusPower - 1);
+    diffCoeff = 0.5 * m_params.lapidusCoeff * pow(m_deriv.m_dx, 2) * diffCoeff;
+    double m_dt = 0.25;
+    data_t diffCoeffSafe = simd_min(diffCoeff, m_params.diffCFLFact * pow(m_deriv.m_dx, 2) / 
+					m_dt); //!< Do not allow the diffusion coefficient to
+                                               //!< violate the Courant condition
+    // Introduce a hard cutoff for the lapse
+    auto lapse_above_cutoff = simd_compare_gt(vars.lapse, m_params.diffCutoff);
+    diffCoeffSafe = simd_conditional(lapse_above_cutoff, 0.0, diffCoeffSafe);
+    //diffCoeffSafe = diffCoeffSafe * (1.0 - pow(1.1, -m_params.diffCutoff/vars.lapse));
+    
+    Tensor<2, data_t> space_laplace_g = {0.};
+    data_t sgn;
+    FOR(i, j) {
+    	FOR(k) { space_laplace_g[i][j] += d2.g[i][j][k][k]; }
+    	//sgn = simd_conditional(simd_compare_gt(space_laplace_g[i][j], 0.0), 1.0, -1.0);
+    	//space_laplace_g[i][j] = sgn * simd_min(diffCoeffSafe * abs(space_laplace_g[i][j]), 
+    	//			100 *  abs(rhs.g[i][j]));
+        rhs.g[i][j] += diffCoeffSafe * space_laplace_g[i][j];
+    }
+
+
     data_t kappa1_times_lapse;
     if (m_params.covariantZ4)
         kappa1_times_lapse = m_params.kappa1;
@@ -130,7 +159,7 @@ void GHCRHS<gauge_t, deriv_t>::rhs_equation(
             rhs.Gam[i] +=
                 g_UU[i][j] *
                     (2. * vars.lapse * d1.Theta[j] + (tr_K - 2. * vars.Theta) * d1.lapse[j]) -
-                2. * K_UU[i][j] * d1.lapse[j];
+                2. * K_UU[i][j] * d1.lapse[j] - vars.Gam[j] * d1.shift[i][j];
 
             FOR(k)
             {

@@ -74,6 +74,9 @@ template <class data_t> void KerrBH::compute(Cell<data_t> current_cell) const
     // vars.lapse = kerr_lapse;
     vars.lapse = pow(chi, 0.5);
 
+    vars.Theta = 0.;
+    FOR(i) vars.Gam[i] = 0.;
+    FOR(i) vars.B[i] = 0.;
     // Populate the variables on the grid
     // NB We stil need to set Gamma^i which is NON ZERO
     // but we do this via a separate class/compute function

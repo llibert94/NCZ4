@@ -38,6 +38,13 @@ class SimulationParametersBase : public ChomboParameters
         pp.load("lapse_coeff", ghc_params.lapse_coeff, 2.0);
         pp.load("lapse_power", ghc_params.lapse_power, 1.0);
 
+	// Diffusion parameters
+	pp.load("lapidusPower", ghc_params.lapidusPower, 1.0);
+	pp.load("lapidusCoeff", ghc_params.lapidusCoeff, 0.1);
+	pp.load("diffCutoff", ghc_params.diffCutoff, 0.03);
+	pp.load("diffCFLFact", ghc_params.diffCFLFact, 1e20);
+	
+
         // Shift Evolution
         pp.load("shift_advec_coeff", ghc_params.shift_advec_coeff, 0.0);
         pp.load("shift_Gamma_coeff", ghc_params.shift_Gamma_coeff, 1.0);

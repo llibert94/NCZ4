@@ -32,14 +32,16 @@ template <class data_t> struct VarsNoGauge
     void enum_mapping(mapping_function_t mapping_function)
     {
         using namespace VarsTools; // define_enum_mapping is part of VarsTools
-	define_enum_mapping(
-            mapping_function, GRInterval<c_Gam1, D_SELECT(, c_Gam2, c_Gam3)>(),
-            Gam); //!< The auxilliary variable Gamma^i
-        // Symmetric 2-tensors
+	define_enum_mapping(mapping_function, c_Theta, Theta);
+	// Symmetric 2-tensors
         define_symmetric_enum_mapping(
 	   mapping_function, GRInterval<c_g11, D_SELECT(, c_g22, c_g33)>(), g);
 	define_symmetric_enum_mapping(
            mapping_function, GRInterval<c_K11, D_SELECT(, c_K22, c_K33)>(), K);
+	define_enum_mapping(
+            mapping_function, GRInterval<c_Gam1, D_SELECT(, c_Gam2, c_Gam3)>(),
+            Gam); //!< The auxilliary variable Gamma^i
+
     }
 };
 

@@ -25,7 +25,7 @@ void KerrBHLevel::specificAdvance()
     // Enforce positive chi and alpha
     BoxLoops::loop(PositiveChiAndAlpha(),
                    m_state_new, m_state_new, INCLUDE_GHOST_CELLS);
-
+    
     // Check for nan's
     if (m_p.nan_check)
         BoxLoops::loop(
@@ -66,7 +66,7 @@ void KerrBHLevel::prePlotLevel()
         return;
 #endif
 
-    fillAllGhosts();
+  //  fillAllGhosts();
   //  BoxLoops::loop(Constraints(m_dx, c_Ham, Interval(c_Mom1, c_Mom3)),
   //                 m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
 }
@@ -78,7 +78,7 @@ void KerrBHLevel::specificEvalRHS(GRLevelData &a_soln, GRLevelData &a_rhs,
     // Enforce the trace free A_ij condition and positive chi and alpha
     BoxLoops::loop(PositiveChiAndAlpha(),
                    a_soln, a_soln, INCLUDE_GHOST_CELLS);
-
+    
     // Calculate CCZ4 right hand side
     if (m_p.max_spatial_derivative_order == 4)
     {
@@ -118,7 +118,7 @@ void KerrBHLevel::specificPostTimeStep()
     // if print is on and there are Diagnostics to write, calculate them!
     if (m_bh_amr.m_ah_finder.need_diagnostics(m_dt, m_time))
     {
-        fillAllGhosts();
+        //fillAllGhosts();
         //BoxLoops::loop(Constraints(m_dx, c_Ham, Interval(c_Mom1, c_Mom3)),
         //               m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
     }

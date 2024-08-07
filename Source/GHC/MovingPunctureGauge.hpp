@@ -7,6 +7,7 @@
 #define MOVINGPUNCTUREGAUGE_HPP_
 
 #include "DimensionDefinitions.hpp"
+#include "simd.hpp"
 #include "Tensor.hpp"
 
 /// This is an example of a gauge class that can be used in the GHCRHS compute
@@ -36,6 +37,11 @@ class MovingPunctureGauge
                                          //! shift condition on/off
         double eta = 1.; //!< The eta in \f$\partial_t B^i = \partial_t \tilde
                          //!\Gamma - \eta B^i\f$
+        double lapidusPower = 1.;
+        double lapidusCoeff = 0.1;
+        double diffCutoff = 0.03;
+        double diffCFLFact = 1e20;
+
     };
 
   protected:
@@ -54,19 +60,34 @@ class MovingPunctureGauge
         using namespace TensorAlgebra;
 
 	auto g_UU = compute_inverse_sym(vars.g);
+	auto chris = compute_christoffel(d1.g, g_UU);
 	data_t tr_K = compute_trace(vars.K, g_UU);
 
+	data_t det_g = compute_determinant_sym(vars.g);
+        data_t chi = pow(det_g, -1. / (double)GR_SPACEDIM);
+	data_t chi_regularised = simd_max(1e-6, chi);
+
 	rhs.lapse = m_params.lapse_advec_coeff * advec.lapse -
-                    m_params.lapse_coeff *
-                        pow(vars.lapse, m_params.lapse_power) *
-                        (tr_K - 2 * vars.Theta);
+                    (m_params.lapse_coeff *
+                        pow(vars.lapse, m_params.lapse_power)) *
+                        (tr_K - 2. * vars.Theta);
         FOR(i)
         {
-            rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
+            /*rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
                            m_params.shift_Gamma_coeff * vars.B[i];
-            rhs.B[i] = m_params.shift_advec_coeff * advec.B[i] -
-                       m_params.shift_advec_coeff * advec.Gam[i] +
-                       rhs.Gam[i] - m_params.eta * vars.B[i];
+            rhs.B[i] = m_params.shift_advec_coeff * advec.B[i] +
+                       rhs.Gam[i] - m_params.shift_advec_coeff * advec.Gam[i] -
+                       m_params.eta * vars.B[i];*/
+	    rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
+                       m_params.shift_Gamma_coeff * chris.contracted[i] / chi_regularised -
+                       m_params.eta * vars.shift[i];
+            FOR(j,k,l) {
+            	rhs.shift[i] += m_params.shift_Gamma_coeff * g_UU[i][j] * g_UU[k][l] * d1.g[k][l][j] / (6. * chi_regularised); 
+            }
+	    /*rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
+                       m_params.shift_Gamma_coeff * chris.contracted[i] -
+                       m_params.eta * vars.shift[i];*/
+	    rhs.B[i] = 0.;
         }
     }
 };
