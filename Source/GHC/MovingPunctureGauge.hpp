@@ -73,21 +73,21 @@ class MovingPunctureGauge
                         (tr_K - 2. * vars.Theta);
         FOR(i)
         {
-            /*rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
+            rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
                            m_params.shift_Gamma_coeff * vars.B[i];
             rhs.B[i] = m_params.shift_advec_coeff * advec.B[i] +
                        rhs.Gam[i] - m_params.shift_advec_coeff * advec.Gam[i] -
-                       m_params.eta * vars.B[i];*/
-	    rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
+                       m_params.eta * vars.B[i];
+	    /*rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
                        m_params.shift_Gamma_coeff * chris.contracted[i] / chi_regularised -
                        m_params.eta * vars.shift[i];
             FOR(j,k,l) {
             	rhs.shift[i] += m_params.shift_Gamma_coeff * g_UU[i][j] * g_UU[k][l] * d1.g[k][l][j] / (6. * chi_regularised); 
-            }
+            }*/
 	    /*rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
                        m_params.shift_Gamma_coeff * chris.contracted[i] -
                        m_params.eta * vars.shift[i];*/
-	    rhs.B[i] = 0.;
+	    //rhs.B[i] = 0.;
         }
     }
 };

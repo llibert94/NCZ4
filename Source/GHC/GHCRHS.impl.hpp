@@ -126,8 +126,8 @@ void GHCRHS<gauge_t, deriv_t>::rhs_equation(
 
     FOR(i, j)
     {
-        rhs.K[i][j] = advec.K[i][j] - covd2lapse[i][j] + vars.lapse * ricci.LL[i][j] -
-                      2. * vars.K[i][j] * vars.lapse * (tr_K - 2. * vars.Theta) -
+        rhs.K[i][j] = advec.K[i][j] - covd2lapse[i][j] + vars.lapse * ricci.LL[i][j] +
+                      vars.K[i][j] * vars.lapse * (tr_K - 2. * vars.Theta) -
 		      kappa1_times_lapse * (1. + m_params.kappa2) * vars.Theta * vars.g[i][j];
         FOR(k)
         {
