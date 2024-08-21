@@ -53,6 +53,8 @@ class GammaCalculator
         // FArrayBox
         current_cell.store_vars(chris.contracted,
                                 GRInterval<c_Gam1, c_Gam3>());
+	/*current_cell.store_vars(chris.contracted,
+                                GRInterval<c_shift1, c_shift3>());*/
     }
 };
 

@@ -166,7 +166,8 @@ void GHCRHS<gauge_t, deriv_t>::rhs_equation(
                 rhs.Gam[i] +=
                     2. * vars.lapse * chris.ULL[i][j][k] * K_UU[j][k] +
                     g_UU[j][k] * d2.shift[i][j][k];
-		FOR(l) rhs.Gam[i] += -vars.lapse * g_UU[j][k] * g_UU[i][l] * d1.K[j][k][l];
+		FOR(l) rhs.Gam[i] += -vars.lapse * g_UU[i][l] * (g_UU[j][k] * d1.K[j][k][l] - 
+						2. * K_UU[k][j] * chris.LLL[k][l][j]);
             }
         }
     }

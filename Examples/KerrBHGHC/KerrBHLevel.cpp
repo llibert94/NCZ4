@@ -5,6 +5,7 @@
 
 #include "KerrBHLevel.hpp"
 #include "BoxLoops.hpp"
+#include "ConfGamma.hpp"
 #include "GHCRHS.hpp"
 #include "FixedGridsTaggingCriterion.hpp"
 #include "ComputePack.hpp"
@@ -20,10 +21,13 @@
 #include "GammaCalculator.hpp"
 #include "KerrBH.hpp"
 
+#include "ADMQuantities.hpp"
+#include "ADMQuantitiesExtraction.hpp"
+
 void KerrBHLevel::specificAdvance()
 {
     // Enforce positive chi and alpha
-    BoxLoops::loop(PositiveChiAndAlpha(),
+    BoxLoops::loop(PositiveChiAndAlpha(m_p.min_chi, m_p.min_lapse),
                    m_state_new, m_state_new, INCLUDE_GHOST_CELLS);
     
     // Check for nan's
@@ -66,9 +70,9 @@ void KerrBHLevel::prePlotLevel()
         return;
 #endif
 
-  //  fillAllGhosts();
-  //  BoxLoops::loop(Constraints(m_dx, c_Ham, Interval(c_Mom1, c_Mom3)),
-  //                 m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
+    fillAllGhosts();
+    BoxLoops::loop(ConfGamma(m_dx, Interval(c_CGam1, c_CGam3)),
+                    m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
 }
 #endif /* CH_USE_HDF5 */
 
@@ -76,7 +80,7 @@ void KerrBHLevel::specificEvalRHS(GRLevelData &a_soln, GRLevelData &a_rhs,
                                   const double a_time)
 {
     // Enforce the trace free A_ij condition and positive chi and alpha
-    BoxLoops::loop(PositiveChiAndAlpha(),
+    BoxLoops::loop(PositiveChiAndAlpha(m_p.min_chi, m_p.min_lapse),
                    a_soln, a_soln, INCLUDE_GHOST_CELLS);
     
     // Calculate CCZ4 right hand side
@@ -114,6 +118,32 @@ void KerrBHLevel::computeTaggingCriterion(
 void KerrBHLevel::specificPostTimeStep()
 {
     CH_TIME("KerrBHLevel::specificPostTimeStep");
+        // Do the extraction on the min extraction level
+    if (m_p.activate_extraction == 1)
+    {
+        int min_level = m_p.extraction_params.min_extraction_level();
+        bool calculate_adm = at_level_timestep_multiple(min_level);
+        if (calculate_adm)
+        {
+            // Populate the ADM Mass and Spin values on the grid
+            fillAllGhosts();
+            BoxLoops::loop(ADMQuantities(m_p.extraction_params.center, m_dx,
+                                         c_Madm, c_Jadm),
+                           m_state_new, m_state_diagnostics,
+                           EXCLUDE_GHOST_CELLS);
+
+            if (m_level == min_level)
+            {
+                CH_TIME("ADMExtraction");
+                // Now refresh the interpolator and do the interpolation
+                m_gr_amr.m_interpolator->refresh();
+                ADMQuantitiesExtraction my_extraction(
+                    m_p.extraction_params, m_dt, m_time, m_restart_time, c_Madm,
+                    c_Jadm);
+                my_extraction.execute_query(m_gr_amr.m_interpolator);
+            }
+        }
+    }
 #ifdef USE_AHFINDER
     // if print is on and there are Diagnostics to write, calculate them!
     if (m_bh_amr.m_ah_finder.need_diagnostics(m_dt, m_time))

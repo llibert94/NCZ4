@@ -65,7 +65,7 @@ class MovingPunctureGauge
 
 	data_t det_g = compute_determinant_sym(vars.g);
         data_t chi = pow(det_g, -1. / (double)GR_SPACEDIM);
-	data_t chi_regularised = simd_max(1e-6, chi);
+	data_t chi_regularised = simd_max(1e-4, chi);
 
 	rhs.lapse = m_params.lapse_advec_coeff * advec.lapse -
                     (m_params.lapse_coeff *
@@ -73,21 +73,27 @@ class MovingPunctureGauge
                         (tr_K - 2. * vars.Theta);
         FOR(i)
         {
-            rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
+	    // Not integrated
+            /*rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
                            m_params.shift_Gamma_coeff * vars.B[i];
             rhs.B[i] = m_params.shift_advec_coeff * advec.B[i] +
                        rhs.Gam[i] - m_params.shift_advec_coeff * advec.Gam[i] -
-                       m_params.eta * vars.B[i];
-	    /*rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
+                       m_params.eta * vars.B[i];*/
+	    
+	    // With conformal gamma
+	    rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
                        m_params.shift_Gamma_coeff * chris.contracted[i] / chi_regularised -
                        m_params.eta * vars.shift[i];
             FOR(j,k,l) {
             	rhs.shift[i] += m_params.shift_Gamma_coeff * g_UU[i][j] * g_UU[k][l] * d1.g[k][l][j] / (6. * chi_regularised); 
-            }*/
+            }
+
+	    // Integrated
 	    /*rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
-                       m_params.shift_Gamma_coeff * chris.contracted[i] -
+                       m_params.shift_Gamma_coeff * vars.Gam[i] -
                        m_params.eta * vars.shift[i];*/
-	    //rhs.B[i] = 0.;
+	    //rhs.shift[i] = 0.;
+	    rhs.B[i] = 0.;
         }
     }
 };
