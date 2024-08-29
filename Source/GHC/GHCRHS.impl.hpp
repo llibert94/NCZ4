@@ -90,7 +90,7 @@ void GHCRHS<gauge_t, deriv_t>::rhs_equation(
 
     // add diffusion term
         
-    data_t diffCoeff = 0.;
+    /*data_t diffCoeff = 0.;
     FOR(i, j) {
         FOR(k) { diffCoeff += pow(d1.g[i][j][k], 2);}
     }
@@ -114,7 +114,7 @@ void GHCRHS<gauge_t, deriv_t>::rhs_equation(
     	//space_laplace_g[i][j] = sgn * simd_min(diffCoeffSafe * abs(space_laplace_g[i][j]), 
     	//			100 *  abs(rhs.g[i][j]));
         rhs.g[i][j] += diffCoeffSafe * space_laplace_g[i][j];
-    }
+    }*/
 
 
     data_t kappa1_times_lapse;

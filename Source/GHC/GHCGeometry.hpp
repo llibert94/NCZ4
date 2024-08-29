@@ -46,6 +46,12 @@ class GHCGeometry
 	FOR(i, j, k, l) chris_LLU[i][j][k] += g_UU[k][l] * chris.LLL[i][j][l];
 	FOR(i, j, k, l) chris_LUU[i][j][k] += g_UU[j][l] * chris_LLU[i][l][k];
 
+	/*FOR(i, j, k) {
+	   chris_LLU[i][j][k] = 0.; chris_LUU[i][j][k] = 0.;
+	   FOR(l) chris_LLU[i][j][k] += g_UU[k][l] * chris.LLL[i][j][l];
+	   FOR(l) chris_LUU[i][j][k] += g_UU[j][l] * chris_LLU[i][l][k];
+	}*/
+
         FOR(i, j)
         {
             out.LL[i][j] = 0.;
@@ -53,7 +59,9 @@ class GHCGeometry
             {  
 		out.LL[i][j] += 0.5 * (vars.g[k][i] * d1.Gam[k][j] +
                                     vars.g[k][j] * d1.Gam[k][i]);
-                out.LL[i][j] += -vars.Gam[k] * chris.LLL[k][i][j]; // ???
+                //out.LL[i][j] += -vars.Gam[k] * chris.LLL[k][i][j];
+		out.LL[i][j] += -2. * Z[k] * chris.LLL[k][i][j];
+	        out.LL[i][j] += 0.5 * vars.Gam[k] * d1.g[i][j][k];	
                 FOR(l)
                 {
                     out.LL[i][j] += -0.5 * g_UU[k][l] * d2.g[i][j][k][l] -
@@ -61,8 +69,7 @@ class GHCGeometry
 		    FOR(m, n)
 		    {
 			out.LL[i][j] += g_UU[l][n] * g_UU[k][m] * 
-					  (d1.g[k][i][l] * d1.g[m][j][n] -
-				           0.5 * d1.g[i][j][k] * d1.g[l][m][n]);
+					  d1.g[k][i][l] * d1.g[m][j][n];
 		    }
                 }
             }

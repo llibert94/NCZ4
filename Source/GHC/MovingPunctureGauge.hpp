@@ -78,8 +78,8 @@ class MovingPunctureGauge
                            m_params.shift_Gamma_coeff * vars.B[i];
             rhs.B[i] = m_params.shift_advec_coeff * advec.B[i] +
                        rhs.Gam[i] - m_params.shift_advec_coeff * advec.Gam[i] -
-                       m_params.eta * vars.B[i];*/
-	    
+                       m_params.eta * vars.B[i];
+	    */
 	    // With conformal gamma
 	    rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
                        m_params.shift_Gamma_coeff * chris.contracted[i] / chi_regularised -
@@ -92,7 +92,6 @@ class MovingPunctureGauge
 	    /*rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
                        m_params.shift_Gamma_coeff * vars.Gam[i] -
                        m_params.eta * vars.shift[i];*/
-	    //rhs.shift[i] = 0.;
 	    rhs.B[i] = 0.;
         }
     }
