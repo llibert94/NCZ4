@@ -46,12 +46,6 @@ class GHCGeometry
 	FOR(i, j, k, l) chris_LLU[i][j][k] += g_UU[k][l] * chris.LLL[i][j][l];
 	FOR(i, j, k, l) chris_LUU[i][j][k] += g_UU[j][l] * chris_LLU[i][l][k];
 
-	/*FOR(i, j, k) {
-	   chris_LLU[i][j][k] = 0.; chris_LUU[i][j][k] = 0.;
-	   FOR(l) chris_LLU[i][j][k] += g_UU[k][l] * chris.LLL[i][j][l];
-	   FOR(l) chris_LUU[i][j][k] += g_UU[j][l] * chris_LLU[i][l][k];
-	}*/
-
         FOR(i, j)
         {
             out.LL[i][j] = 0.;
@@ -59,8 +53,6 @@ class GHCGeometry
             {  
 		out.LL[i][j] += 0.5 * (vars.g[k][i] * d1.Gam[k][j] +
                                     vars.g[k][j] * d1.Gam[k][i]);
-                //out.LL[i][j] += -vars.Gam[k] * chris.LLL[k][i][j];
-		out.LL[i][j] += -2. * Z[k] * chris.LLL[k][i][j];
 	        out.LL[i][j] += 0.5 * vars.Gam[k] * d1.g[i][j][k];	
                 FOR(l)
                 {
@@ -91,14 +83,16 @@ class GHCGeometry
         {
             FOR(m, n, p)
             {
-                data_t d1_terms = 0.;
-                FOR(q, r)
-                {
-                    d1_terms += -g_UU[q][r] * (d1_g[n][q][j] * d1_g[m][p][r] +
-                                               d1_g[m][n][j] * d1_g[p][q][r]);
-                }
                 d1_chris_contracted[i][j] +=
-                    g_UU[i][m] * g_UU[n][p] * (d2_g[m][n][j][p] + d1_terms);
+                    g_UU[i][m] * g_UU[n][p] * (d2_g[m][n][j][p] - 0.5 * d2_g[n][p][j][m]);
+		FOR(q, r)
+		{
+		    d1_chris_contracted[i][j] +=
+			-d1_g[q][r][j] * (d1_g[m][n][p] - 0.5 * d1_g[n][p][m]) *
+				(g_UU[i][m] * g_UU[n][q] * g_UU[p][r] + 
+				 g_UU[n][p] * g_UU[i][q] * g_UU[m][r]);
+
+		}
             }
         }
         return d1_chris_contracted;
@@ -134,7 +128,7 @@ class GHCGeometry
                     (1. - 0.5 * dZ_coeff) * 0.5 *
                     (vars.g[m][i] *
                          (d1_chris_contracted[m][j] - d1.Gam[m][j]) +
-                     vars.h[m][j] *
+                     vars.g[m][j] *
                          (d1_chris_contracted[m][i] - d1.Gam[m][i]) +
                      (chris.contracted[m] - vars.Gam[m]) * d1.g[i][j][m]);
             }

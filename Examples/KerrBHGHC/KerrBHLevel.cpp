@@ -11,7 +11,7 @@
 #include "ComputePack.hpp"
 #include "KerrBHLevel.hpp"
 #include "NanCheck.hpp"
-//#include "NewConstraints.hpp"
+#include "NewConstraints.hpp"
 #include "PositiveChiAndAlpha.hpp"
 #include "SetValue.hpp"
 #include "SixthOrderDerivatives.hpp"
@@ -56,8 +56,8 @@ void KerrBHLevel::initialData()
 
 #ifdef USE_AHFINDER
     // Diagnostics needed for AHFinder
-    //BoxLoops::loop(Constraints(m_dx, c_Ham, Interval(c_Mom1, c_Mom3)),
-    //               m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
+    BoxLoops::loop(Constraints(m_dx, c_Ham, Interval(c_Mom1, c_Mom3)),
+                   m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
 #endif
 }
 
@@ -148,9 +148,9 @@ void KerrBHLevel::specificPostTimeStep()
     // if print is on and there are Diagnostics to write, calculate them!
     if (m_bh_amr.m_ah_finder.need_diagnostics(m_dt, m_time))
     {
-        //fillAllGhosts();
-        //BoxLoops::loop(Constraints(m_dx, c_Ham, Interval(c_Mom1, c_Mom3)),
-        //               m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
+        fillAllGhosts();
+        BoxLoops::loop(Constraints(m_dx, c_Ham, Interval(c_Mom1, c_Mom3)),
+                       m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
     }
     if (m_p.AH_activate && m_level == m_p.AH_params.level_to_run)
         m_bh_amr.m_ah_finder.solve(m_dt, m_time, m_restart_time);

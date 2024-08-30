@@ -19,7 +19,7 @@ src_dirs := $(GRCHOMBO_SOURCE)/utils \
             $(GRCHOMBO_SOURCE)/GRChomboCore  \
             $(GRCHOMBO_SOURCE)/TaggingCriteria  \
             $(GRCHOMBO_SOURCE)/BlackHoles \
-            $(GRCHOMBO_SOURCE)/AMRInterpolator  \
-            $(GRCHOMBO_SOURCE)/ApparentHorizonFinder
+            $(GRCHOMBO_SOURCE)/AMRInterpolator \
+	    $(GRCHOMBO_SOURCE)/ApparentHorizonFinderGHC
 
 include $(CHOMBO_HOME)/mk/Make.test
