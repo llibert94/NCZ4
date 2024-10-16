@@ -9,6 +9,7 @@
 #include "GHCGeometry.hpp"
 #include "GHCVars.hpp"
 #include "Cell.hpp"
+#include "Coordinates.hpp"
 #include "FourthOrderDerivatives.hpp"
 #include "MovingPunctureGauge.hpp"
 #include "Tensor.hpp"
@@ -67,6 +68,8 @@ class GHCRHS
     const params_t m_params; //!< CCZ4 parameters
     const gauge_t m_gauge;   //!< Class to compute gauge in rhs_equation
     const double m_sigma;    //!< Coefficient for Kreiss-Oliger dissipation
+    const std::array<double, CH_SPACEDIM> m_center;
+    bool m_kerr_bg;
     double m_cosmological_constant;
     const deriv_t m_deriv;
 
@@ -76,6 +79,8 @@ class GHCRHS
         params_t a_params,            //!< The CCZ4 parameters
         double a_dx,                  //!< The grid spacing
         double a_sigma,               //!< Kreiss-Oliger dissipation coefficient
+	const std::array<double, CH_SPACEDIM> a_center,
+	bool a_kerr_bg,
         double a_cosmological_constant = 0 //!< Value of the cosmological const.
     );
 
@@ -90,7 +95,7 @@ class GHCRHS
     /// Calculates the rhs for GHC
     /** Calculates the right hand side for GHC and calls rhs_gauge for the
      *gauge conditions The variables (the template argument vars_t) must contain
-     *at least the members: g[i][j], Gam[i], K[i][j], Theta, lapse and
+     *at least the members: g[i][j], Gam[i], K[i][j], Pi, lapse and
      *shift[i].
      **/
     template <class data_t, template <typename> class vars_t,
@@ -104,7 +109,8 @@ class GHCRHS
         const diff2_vars_t<Tensor<2, data_t>>
             &d2, //!< The second derivative the variables
         const vars_t<data_t>
-            &advec //!< The advection derivatives of the variables
+            &advec, //!< The advection derivatives of the variables
+	const Coordinates<data_t> &coords
     ) const;
 };
 

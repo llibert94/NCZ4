@@ -21,7 +21,7 @@ namespace GHCVars
 /// Vars object for GHC vars, including gauge vars
 template <class data_t> struct VarsNoGauge
 {
-    data_t Theta;          //!< GHC quantity associated to Hamiltonian constraint
+    data_t Pi;             //!< GHC quantity associated to Hamiltonian constraint
     Tensor<2, data_t> g;   //!< Physical metric
     Tensor<2, data_t> K;   //!< Extrinsic curvature
     Tensor<1, data_t> Gam; //!< Physical Gamma^i variable
@@ -32,7 +32,7 @@ template <class data_t> struct VarsNoGauge
     void enum_mapping(mapping_function_t mapping_function)
     {
         using namespace VarsTools; // define_enum_mapping is part of VarsTools
-	define_enum_mapping(mapping_function, c_Theta, Theta);
+	define_enum_mapping(mapping_function, c_Pi, Pi);
 	// Symmetric 2-tensors
         define_symmetric_enum_mapping(
 	   mapping_function, GRInterval<c_g11, D_SELECT(, c_g22, c_g33)>(), g);

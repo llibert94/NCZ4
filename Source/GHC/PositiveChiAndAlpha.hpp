@@ -45,6 +45,7 @@ class PositiveChiAndAlpha
         auto vars = current_cell.template load_vars<Vars>();
 	
 	data_t det_g = TensorAlgebra::compute_determinant_sym(vars.g);
+	det_g = sqrt(det_g * det_g);
 	data_t chi = pow(det_g, -1. / (double)GR_SPACEDIM);
 
 	data_t chi_min = simd_max(chi, m_min_chi);

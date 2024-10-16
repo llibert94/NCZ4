@@ -23,9 +23,10 @@ template <class data_t> void BinaryBH::compute(Cell<data_t> current_cell) const
     Coordinates<data_t> coords(current_cell, m_dx);
 
     data_t chi = compute_chi(coords);
+    data_t chi_regularised = simd_max(1e-4, chi);
 
     // Conformal metric is flat
-    FOR(i) vars.g[i][i] = chi;
+    FOR(i) vars.g[i][i] = 1. / chi_regularised;
 
     vars.K = compute_A(chi, coords);
 

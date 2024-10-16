@@ -80,15 +80,15 @@ int main()
 
         // Test the fixed BG - first assign the fixed bg vars to the BSSN vars
         KerrSchild::params_t bg_params;
-        bg_params.mass = 1.0;
-        bg_params.spin = 0.0;
+        bg_params.mass = 2.0;
+        bg_params.spin = 0.5;
         bg_params.center = center_vector;
         KerrSchild kerr_bh(bg_params, dx);
         BoxLoops::loop(
             KerrSchild(bg_params, dx),
             fixedbg_fab, fixedbg_fab);
         // used temp single ghosted box to avoid nans at boundaries in Gamma^i
-        BoxLoops::loop(GammaCalculator(dx), fixedbg_fab, deriv_fixedbg_fab);
+        BoxLoops::loop(GammaCalculator(dx, center_vector, 1), fixedbg_fab, deriv_fixedbg_fab);
         fixedbg_fab += deriv_fixedbg_fab;
 
         // Get the Ham and Mom constraints using these values and finite diffs
@@ -105,6 +105,7 @@ int main()
         //ghc_params.kappa3 = 0.0;
         ghc_params.lapse_coeff = 0.0; // no evolution lapse or shift
         ghc_params.shift_Gamma_coeff = 0.0;
+	ghc_params.eta = 0.0;
 
         //const double scalar_mass = 0.1;
         //ScalarPotential potential(scalar_mass);
@@ -119,7 +120,7 @@ int main()
         //ScalarField<ScalarPotential> fixed_scalar_field(potential);
         //MatterEvolution<ScalarField<ScalarPotential>, KerrSchild> my_evolution(
         //    fixed_scalar_field, kerr_bh, sigma, dx, center_vector);
-	GHCRHS<> my_evolution(ghc_params, dx, sigma);
+	GHCRHS<> my_evolution(ghc_params, dx, sigma, center_vector, 1);
         BoxLoops::loop(make_compute_pack(my_evolution), fixedbg_fab,
                        fixedbg_rhs_fab);
 
@@ -154,7 +155,7 @@ int main()
                     double z = dx * (iv[2] + 0.5) - center_vector[2];
                     double out1 = fixedbg_fab(iv, c_Gam1);
 		    double out2 = fixedbg_rhs_fab(iv, c_g11);
-                    double out3 = fixedbg_rhs_fab(iv, c_Theta);
+                    double out3 = fixedbg_rhs_fab(iv, c_Pi);
 
                     std::cout << x << ' ' << y << ' ' << z << std::endl;
                     std::cout << out1 << ' ' << out2 << ' ' << out3 << std::endl;

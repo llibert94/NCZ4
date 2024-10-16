@@ -69,12 +69,11 @@ template <class data_t> void KerrBH::compute(Cell<data_t> current_cell) const
     data_t detg = compute_determinant(vars.g);
     auto g_UU = compute_inverse_sym(vars.g);
     data_t chi = pow(detg, -1. / 3.);
-
     // use a pre collapsed lapse, could also use analytic one
     // vars.lapse = kerr_lapse;
     vars.lapse = pow(chi, 0.5);
 
-    vars.Theta = 0.;
+    vars.Pi = 0.5 * compute_trace(vars.K, g_UU);
     FOR(i) vars.Gam[i] = 0.;
     FOR(i) vars.B[i] = 0.;
     // Populate the variables on the grid

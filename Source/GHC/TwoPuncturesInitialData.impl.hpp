@@ -28,11 +28,13 @@ void TwoPuncturesInitialData::compute(Cell<double> current_cell) const
     // tracefree K)
 
     // metric variables
-    FOR(i) vars.h[i][i] = h_phys[i][j];
+    FOR(i) vars.g[i][i] = h_phys[i][j];
+    using namespace TensorAlgebra;
+    const auto g_UU = compute_inverse_sym(vars.g);
 
     // extrinsic curvature
     FOR(i, j) { vars.K[i][j] = K_tensor[i][j]; }
-
+    vars.Pi = 0.5 * compute_trace(vars.K, g_UU);
     // gauge
     vars.lapse = lapse;
 

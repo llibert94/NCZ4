@@ -51,7 +51,7 @@ void KerrBHLevel::initialData()
         m_state_new, m_state_new, INCLUDE_GHOST_CELLS);
 
     fillAllGhosts();
-    BoxLoops::loop(GammaCalculator(m_dx), m_state_new, m_state_new,
+    BoxLoops::loop(GammaCalculator(m_dx, m_p.center, m_p.kerr_bg), m_state_new, m_state_new,
                    EXCLUDE_GHOST_CELLS);
 
 #ifdef USE_AHFINDER
@@ -87,13 +87,13 @@ void KerrBHLevel::specificEvalRHS(GRLevelData &a_soln, GRLevelData &a_rhs,
     if (m_p.max_spatial_derivative_order == 4)
     {
         BoxLoops::loop(GHCRHS<MovingPunctureGauge, FourthOrderDerivatives>(
-                           m_p.ghc_params, m_dx, m_p.sigma),
+                           m_p.ghc_params, m_dx, m_p.sigma, m_p.center, m_p.kerr_bg),
                        a_soln, a_rhs, EXCLUDE_GHOST_CELLS);
     }
     else if (m_p.max_spatial_derivative_order == 6)
     {
         BoxLoops::loop(GHCRHS<MovingPunctureGauge, SixthOrderDerivatives>(
-                           m_p.ghc_params, m_dx, m_p.sigma),
+                           m_p.ghc_params, m_dx, m_p.sigma, m_p.center, m_p.kerr_bg),
                        a_soln, a_rhs, EXCLUDE_GHOST_CELLS);
     }
 }

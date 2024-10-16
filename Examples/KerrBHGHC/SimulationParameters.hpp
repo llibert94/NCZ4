@@ -33,6 +33,7 @@ class SimulationParameters : public SimulationParametersBase
                 {0., 0., 1.});
 
 	pp.load("activate_extraction", activate_extraction, false);
+	pp.load("kerr_bg", kerr_bg, false);
 
 #ifdef USE_AHFINDER
         pp.load("AH_initial_guess", AH_initial_guess, 0.5 * kerr_params.mass);
@@ -60,6 +61,7 @@ class SimulationParameters : public SimulationParametersBase
 
     KerrBH::params_t kerr_params;
     bool activate_extraction;
+    bool kerr_bg;
 #ifdef USE_AHFINDER
     double AH_initial_guess;
 #endif

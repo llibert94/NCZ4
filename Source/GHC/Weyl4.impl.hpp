@@ -137,11 +137,12 @@ EBFields_t<data_t> Weyl4::compute_EB_fields(
     }
 
    data_t tr_K = TensorAlgebra::compute_trace(vars.K, g_UU);
+   data_t Theta = 0.5 * (tr_K + vars.Pi);
 
     FOR(i, j)
     {
         out.E[i][j] +=
-            ricci_and_Z_terms.LL[i][j] + (tr_K - vars.Theta) * vars.K[i][j];
+            ricci_and_Z_terms.LL[i][j] + (tr_K - Theta) * vars.K[i][j];
 
         FOR(k, l)
         {

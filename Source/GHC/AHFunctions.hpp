@@ -55,10 +55,10 @@ struct ExpansionFunction : AHFunctionDefault
     //////////////////////////////////
 
     // only require variables up to Kij (gij, Kij)
-    // this assumes c_Theta comes after the last of Kij
+    // this assumes c_Pi comes after the last of Kij
     // (and like this the code is generic for 2D and 3D)
     static ALWAYS_INLINE int vars_min() { return c_g11; }
-    static ALWAYS_INLINE int vars_max() { return c_Theta - 1; }
+    static ALWAYS_INLINE int vars_max() { return c_Pi - 1; }
     // Derivatives required only for the metric component (gij)
     // this assumes c_K11 comes after the last gij
     // (and like this the code is generic for 2D and 3D)
@@ -205,7 +205,7 @@ struct ExpansionFunction : AHFunctionDefault
 #if GR_SPACEDIM != CH_SPACEDIM
         int comp_hww =
             c_K - 1; // c_K-1 expected to be c_hww (is c_hww direct better?)
-        int comp_Aww = c_Aww; // is (c_Theta-1) more general?
+        int comp_Aww = c_Aww; // is (c_Pi-1) more general?
         Tensor<1, double, CH_SPACEDIM> dhww;
 
         coords = a_coords_cartesian;

@@ -64,13 +64,13 @@ class MovingPunctureGauge
 	data_t tr_K = compute_trace(vars.K, g_UU);
 
 	data_t det_g = compute_determinant_sym(vars.g);
+	det_g = sqrt(det_g * det_g);
         data_t chi = pow(det_g, -1. / (double)GR_SPACEDIM);
-	data_t chi_regularised = simd_max(1e-4, chi);
+	data_t chi_regularised = simd_max(1.e-4, chi);
 
-	rhs.lapse = m_params.lapse_advec_coeff * advec.lapse -
+	rhs.lapse = m_params.lapse_advec_coeff * advec.lapse +
                     (m_params.lapse_coeff *
-                        pow(vars.lapse, m_params.lapse_power)) *
-                        (tr_K - 2. * vars.Theta);
+                        pow(vars.lapse, m_params.lapse_power)) * vars.Pi;
         FOR(i)
         {
 	    // Not integrated

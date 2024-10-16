@@ -7,6 +7,7 @@
 #include "AMRReductions.hpp"
 #include "BinaryBH.hpp"
 #include "BoxLoops.hpp"
+#include "GammaCalculator.hpp"
 #include "GHCRHS.hpp"
 #include "PunctureBoxesTaggingCriterion.hpp"
 #include "ComputePack.hpp"
@@ -25,7 +26,7 @@
 void BinaryBHLevel::specificAdvance()
 {
     // Enforce the positive chi and alpha
-    BoxLoops::loop(PositiveChiAndAlpha(),
+    BoxLoops::loop(PositiveChiAndAlpha(m_p.min_chi, m_p.min_lapse),
                    m_state_new, m_state_new, INCLUDE_GHOST_CELLS);
 
     // Check for nan's
@@ -57,6 +58,10 @@ void BinaryBHLevel::initialData()
     BoxLoops::loop(make_compute_pack(SetValue(0.), binary), m_state_new,
                    m_state_new, INCLUDE_GHOST_CELLS);
 #endif
+
+    fillAllGhosts();
+    BoxLoops::loop(GammaCalculator(m_dx), m_state_new, m_state_new,
+                   EXCLUDE_GHOST_CELLS);
 }
 
 // Calculate RHS during RK4 substeps

@@ -27,7 +27,7 @@ enum
     c_K23,
     c_K33,
 
-    c_Theta,
+    c_Pi,
 
     c_Gam1,
     c_Gam2,
@@ -53,7 +53,7 @@ static const std::array<std::string, NUM_GHC_VARS> ghc_variable_names = {
 
     "K11",    "K12",    "K13",    "K22", "K23", "K33",
 
-    "Theta",
+    "Pi",
 
     "Gam1", "Gam2", "Gam3",
 
