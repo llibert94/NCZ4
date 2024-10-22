@@ -84,7 +84,8 @@ void GHCRHS<gauge_t, deriv_t>::rhs_equation(
     }
     
     auto ricci =
-        GHCGeometry::compute_ricci_Z(vars, d1, d2, g_UU, chris, Z, bg_chris, d_bg_chris_ULL, bg_Riemann, m_kerr_bg);
+        GHCGeometry::compute_ricci_Z(vars, d1, d2, g_UU, chris, Z, bg_vars.g, 
+			bg_d1.g, bg_d2.g, bg_chris, d_bg_chris_ULL, bg_Riemann, m_kerr_bg);
 
     data_t divshift = compute_trace(d1.shift);
     data_t Z_dot_d1lapse = compute_dot_product(Z, d1.lapse);
