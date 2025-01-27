@@ -19,8 +19,8 @@
 #include "SimpleArrayBox.hpp"
 #include "SimpleInterpSource.hpp"
 
-template <class SurfaceGeometry, class AHFunction>
-PETScAHSolver<SurfaceGeometry, AHFunction>::PETScAHSolver(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::PETScAHSolver(
     const AHInterpolation &a_interp, const AHInitialGuessPtr &a_initial_guess,
     const AHParams &a_params)
     : m_interp(a_interp), m_interp_plus(a_interp), m_interp_minus(a_interp),
@@ -37,14 +37,14 @@ PETScAHSolver<SurfaceGeometry, AHFunction>::PETScAHSolver(
     initialise();
 }
 
-template <class SurfaceGeometry, class AHFunction>
-PETScAHSolver<SurfaceGeometry, AHFunction>::~PETScAHSolver()
+template <class SurfaceGeometry, class AHFunction, class background_t>
+PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::~PETScAHSolver()
 {
     finalise();
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void PETScAHSolver<SurfaceGeometry, AHFunction>::initialise()
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::initialise()
 {
     CH_TIME("PETScAHSolver::initialise_PETSc");
 
@@ -258,8 +258,8 @@ void PETScAHSolver<SurfaceGeometry, AHFunction>::initialise()
     }
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void PETScAHSolver<SurfaceGeometry, AHFunction>::finalise()
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::finalise()
 {
     if (!PETScCommunicator::is_rank_active())
         return;
@@ -271,8 +271,8 @@ void PETScAHSolver<SurfaceGeometry, AHFunction>::finalise()
     DMDestroy(&m_dmda);
 }
 
-template <class SurfaceGeometry, class AHFunction>
-bool PETScAHSolver<SurfaceGeometry, AHFunction>::interpolate_ah(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+bool PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::interpolate_ah(
     const std::vector<std::vector<double>> &old_coords)
 {
     // read PETSc array to 'f'
@@ -453,15 +453,15 @@ bool PETScAHSolver<SurfaceGeometry, AHFunction>::interpolate_ah(
     return force_restart;
 }
 
-template <class SurfaceGeometry, class AHFunction>
+template <class SurfaceGeometry, class AHFunction, class background_t>
 const std::array<double, CH_SPACEDIM> &
-PETScAHSolver<SurfaceGeometry, AHFunction>::get_origin() const
+PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::get_origin() const
 {
     return m_interp.get_coord_system().get_origin();
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void PETScAHSolver<SurfaceGeometry, AHFunction>::set_origin(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::set_origin(
     const std::array<double, CH_SPACEDIM> &a_origin)
 {
     m_interp.set_origin(a_origin);
@@ -478,15 +478,17 @@ void PETScAHSolver<SurfaceGeometry, AHFunction>::set_origin(
     }
 }
 
-template <class SurfaceGeometry, class AHFunction>
+template <class SurfaceGeometry, class AHFunction, class background_t>
 const AHInitialGuessPtr &
-PETScAHSolver<SurfaceGeometry, AHFunction>::get_initial_guess() const
+PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::get_initial_guess()
+    const
 {
     return m_initial_guess;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void PETScAHSolver<SurfaceGeometry, AHFunction>::reset_initial_guess()
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void PETScAHSolver<SurfaceGeometry, AHFunction,
+                   background_t>::reset_initial_guess()
 {
     CH_TIME("ApparentHorizon::reset_initial_guess");
 
@@ -532,8 +534,8 @@ void PETScAHSolver<SurfaceGeometry, AHFunction>::reset_initial_guess()
     DMDAVecRestoreArray(m_dmda, m_snes_soln, &f);
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void PETScAHSolver<SurfaceGeometry, AHFunction>::solve()
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::solve()
 {
     // actual solve happens here!
     SNESSolve(m_snes, NULL, m_snes_soln);
@@ -551,38 +553,40 @@ void PETScAHSolver<SurfaceGeometry, AHFunction>::solve()
     }
 }
 
-template <class SurfaceGeometry, class AHFunction>
+template <class SurfaceGeometry, class AHFunction, class background_t>
 SNESConvergedReason
-PETScAHSolver<SurfaceGeometry, AHFunction>::getConvergedReason() const
+PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::getConvergedReason()
+    const
 {
     SNESConvergedReason reason;
     SNESGetConvergedReason(m_snes, &reason);
     return reason;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void PETScAHSolver<SurfaceGeometry, AHFunction>::get_dmda_arr_t(Vec &localF,
-                                                                dmda_arr_t &in)
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::get_dmda_arr_t(
+    Vec &localF, dmda_arr_t &in)
 {
     DMGetLocalVector(m_dmda, &localF);
     DMGlobalToLocalBegin(m_dmda, m_snes_soln, INSERT_VALUES, localF);
     DMGlobalToLocalEnd(m_dmda, m_snes_soln, INSERT_VALUES, localF);
     DMDAVecGetArray(m_dmda, localF, &in);
 }
-template <class SurfaceGeometry, class AHFunction>
-void PETScAHSolver<SurfaceGeometry, AHFunction>::restore_dmda_arr_t(
-    Vec &localF, dmda_arr_t &in)
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void PETScAHSolver<SurfaceGeometry, AHFunction,
+                   background_t>::restore_dmda_arr_t(Vec &localF,
+                                                     dmda_arr_t &in)
 {
     DMDAVecRestoreArray(m_dmda, localF, &in);
     DMRestoreLocalVector(m_dmda, &localF);
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void PETScAHSolver<SurfaceGeometry, AHFunction>::set_stencils(AHDerivData &out,
-                                                              int u
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::set_stencils(
+    AHDerivData &out, int u
 #if CH_SPACEDIM == 3
-                                                              ,
-                                                              int v
+    ,
+    int v
 #endif
 )
 {
@@ -746,8 +750,8 @@ void PETScAHSolver<SurfaceGeometry, AHFunction>::set_stencils(AHDerivData &out,
 #endif
 }
 
-template <class SurfaceGeometry, class AHFunction>
-AHDerivData PETScAHSolver<SurfaceGeometry, AHFunction>::diff(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+AHDerivData PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::diff(
     D_DECL(const dmda_arr_t in, int u, int v))
 {
     CH_TIME("PETScAHSolver::diff");
@@ -818,8 +822,9 @@ AHDerivData PETScAHSolver<SurfaceGeometry, AHFunction>::diff(
     return out;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void PETScAHSolver<SurfaceGeometry, AHFunction>::form_function(Vec F, Vec Rhs)
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::form_function(
+    Vec F, Vec Rhs)
 {
     CH_TIME("PETScAHSolver::form_function");
 
@@ -891,7 +896,7 @@ void PETScAHSolver<SurfaceGeometry, AHFunction>::form_function(Vec F, Vec Rhs)
                 const auto data = m_interp.get_data(idx);
                 const auto coords = m_interp.get_coords(idx);
                 const auto coords_cart = m_interp.get_cartesian_coords(idx);
-                AHFunction func(data, coords, coords_cart);
+                AHFunction func(data, coords, coords_cart, m_background);
                 _out = func.get(geometry_data, deriv, m_params.func_params);
             }
 
@@ -904,8 +909,9 @@ void PETScAHSolver<SurfaceGeometry, AHFunction>::form_function(Vec F, Vec Rhs)
     DMRestoreLocalVector(m_dmda, &localF);
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void PETScAHSolver<SurfaceGeometry, AHFunction>::form_jacobian(Vec F, Mat J)
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::form_jacobian(
+    Vec F, Mat J)
 {
     CH_TIME("PETScAHSolver::form_jacobian");
 
@@ -1066,8 +1072,8 @@ void PETScAHSolver<SurfaceGeometry, AHFunction>::form_jacobian(Vec F, Mat J)
     MatAssemblyEnd(J, MAT_FINAL_ASSEMBLY);
 }
 
-template <class SurfaceGeometry, class AHFunction>
-double PETScAHSolver<SurfaceGeometry, AHFunction>::point_jacobian(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+double PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::point_jacobian(
     int u, int u_stencil,
 #if CH_SPACEDIM == 3
     int v, int v_stencil,
@@ -1093,7 +1099,7 @@ double PETScAHSolver<SurfaceGeometry, AHFunction>::point_jacobian(
         const auto data = interp_plus.get_data(idx);
         const auto coords = interp_plus.get_coords(idx);
         const auto coords_cart = interp_plus.get_cartesian_coords(idx);
-        AHFunction func(data, coords, coords_cart);
+        AHFunction func(data, coords, coords_cart, m_background);
         expansionPlus = func.get(geometry_data, deriv, m_params.func_params);
 
         _in = in_old;
@@ -1111,7 +1117,7 @@ double PETScAHSolver<SurfaceGeometry, AHFunction>::point_jacobian(
         const auto data = interp_minus.get_data(idx);
         const auto coords = interp_minus.get_coords(idx);
         const auto coords_cart = interp_minus.get_cartesian_coords(idx);
-        AHFunction func(data, coords, coords_cart);
+        AHFunction func(data, coords, coords_cart, m_background);
         expansionMinus = func.get(geometry_data, deriv, m_params.func_params);
 
         _in = in_old;
@@ -1121,8 +1127,9 @@ double PETScAHSolver<SurfaceGeometry, AHFunction>::point_jacobian(
 }
 
 //! functions used by PETSc based on 'form_function' and 'form_jacobian'
-template <class SurfaceGeometry, class AHFunction>
-PetscErrorCode PETScAHSolver<SurfaceGeometry, AHFunction>::Petsc_form_function(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+PetscErrorCode
+PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::Petsc_form_function(
     SNES snes, Vec F, Vec Rhs, void *ptr)
 {
     PETScAHSolver &ah = *reinterpret_cast<PETScAHSolver *>(ptr);
@@ -1131,15 +1138,13 @@ PetscErrorCode PETScAHSolver<SurfaceGeometry, AHFunction>::Petsc_form_function(
     return 0;
 }
 
-template <class SurfaceGeometry, class AHFunction>
+template <class SurfaceGeometry, class AHFunction, class background_t>
 PetscErrorCode
 #if PETSC_VERSION_GE(3, 5, 0)
-PETScAHSolver<SurfaceGeometry, AHFunction>::Petsc_form_jacobian(SNES snes,
-                                                                Vec F, Mat Amat,
-                                                                Mat Pmat,
-                                                                void *ptr)
+PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::Petsc_form_jacobian(
+    SNES snes, Vec F, Mat Amat, Mat Pmat, void *ptr)
 #else
-PETScAHSolver<SurfaceGeometry, AHFunction>::Petsc_form_jacobian(
+PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::Petsc_form_jacobian(
     SNES snes, Vec F, Mat *Amat, Mat *Pmat, MatStructure *flag, void *ptr)
 #endif
 {
@@ -1156,8 +1161,9 @@ PETScAHSolver<SurfaceGeometry, AHFunction>::Petsc_form_jacobian(
     return 0;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-PetscErrorCode PETScAHSolver<SurfaceGeometry, AHFunction>::Petsc_SNES_monitor(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+PetscErrorCode
+PETScAHSolver<SurfaceGeometry, AHFunction, background_t>::Petsc_SNES_monitor(
     SNES snes, PetscInt its, PetscReal norm, void *ptr)
 {
     PETScAHSolver &ah = *reinterpret_cast<PETScAHSolver *>(ptr);

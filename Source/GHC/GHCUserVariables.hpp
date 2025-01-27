@@ -13,12 +13,12 @@
 /// This enum gives the index of the CCZ4 variables on the grid
 enum
 {
-    c_g11,
-    c_g12,
-    c_g13,
-    c_g22,
-    c_g23,
-    c_g33,
+    c_h11,
+    c_h12,
+    c_h13,
+    c_h22,
+    c_h23,
+    c_h33,
 
     c_K11,
     c_K12,
@@ -49,13 +49,13 @@ enum
 namespace UserVariables
 {
 static const std::array<std::string, NUM_GHC_VARS> ghc_variable_names = {
-    "g11",    "g12",    "g13",    "g22", "g23", "g33",
+    "h11",    "h12",    "h13",    "h22", "h23", "h33",
 
     "K11",    "K12",    "K13",    "K22", "K23", "K33",
 
     "Pi",
 
-    "Gam1", "Gam2", "Gam3",
+    "Gam1",   "Gam2",   "Gam3",
 
     "lapse",
 

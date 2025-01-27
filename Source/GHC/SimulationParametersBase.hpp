@@ -8,8 +8,8 @@
 
 // General includes
 #include "BoundaryConditions.hpp"
-#include "GHCRHS.hpp"
 #include "ChomboParameters.hpp"
+#include "GHCRHS.hpp"
 #include "GRParmParse.hpp"
 #include <limits>
 
@@ -21,6 +21,7 @@
 // add this type alias here for backwards compatibility
 using extraction_params_t = spherical_extraction_params_t;
 
+template <class background_t>
 class SimulationParametersBase : public ChomboParameters
 {
   public:
@@ -38,20 +39,13 @@ class SimulationParametersBase : public ChomboParameters
         pp.load("lapse_coeff", ghc_params.lapse_coeff, 2.0);
         pp.load("lapse_power", ghc_params.lapse_power, 1.0);
 
-	// Diffusion parameters
-	pp.load("lapidusPower", ghc_params.lapidusPower, 1.0);
-	pp.load("lapidusCoeff", ghc_params.lapidusCoeff, 0.1);
-	pp.load("diffCutoff", ghc_params.diffCutoff, 0.03);
-	pp.load("diffCFLFact", ghc_params.diffCFLFact, 1e20);
-	
-
         // Shift Evolution
         pp.load("shift_advec_coeff", ghc_params.shift_advec_coeff, 0.0);
         pp.load("shift_Gamma_coeff", ghc_params.shift_Gamma_coeff, 1.0);
         pp.load("eta", ghc_params.eta, 1.0);
 
         // GHC parameters
-        //pp.load("formulation", formulation, 0);
+        // pp.load("formulation", formulation, 0);
         pp.load("kappa1", ghc_base_params.kappa1, 0.1);
         pp.load("kappa2", ghc_base_params.kappa2, 0.0);
         pp.load("covariantZ4", ghc_base_params.covariantZ4, true);
@@ -190,14 +184,12 @@ class SimulationParametersBase : public ChomboParameters
         // check_parameter("min_chi", min_chi, (min_chi >= 0.0), "must be >=
         // 0.0"); check_parameter("min_lapse", min_lapse, (min_lapse >= 0.0)
         // "must be >= 0.0");
-        warn_parameter(
-             "kappa1", ghc_params.kappa1, ghc_params.kappa1 > 0.0,
-             "should be greater than 0.0 to damp constraints (see "
-             "arXiv:1106.2254).");
-        warn_parameter("kappa2", ghc_params.kappa2,
-                        ghc_params.kappa2 > -1.0,
-                        "should be greater than -1.0 to damp constraints "
-                        "(see arXiv:1106.2254)");
+        warn_parameter("kappa1", ghc_params.kappa1, ghc_params.kappa1 > 0.0,
+                       "should be greater than 0.0 to damp constraints (see "
+                       "arXiv:1106.2254).");
+        warn_parameter("kappa2", ghc_params.kappa2, ghc_params.kappa2 > -1.0,
+                       "should be greater than -1.0 to damp constraints "
+                       "(see arXiv:1106.2254)");
 
         // only warn for gauge parameters as there are legitimate cases you may
         // want to deviate from the norm
@@ -300,14 +292,15 @@ class SimulationParametersBase : public ChomboParameters
     // Note the gauge parameters are specific to MovingPunctureGauge
     // If you are using a different gauge, you need to load your parameters
     // in your own SimulationParameters class.
-    GHC_params_t<> ghc_params;
+    typename GHCRHS<MovingPunctureGauge<background_t>, FourthOrderDerivatives,
+                    background_t>::params_t ghc_params;
 
     bool activate_extraction;
     spherical_extraction_params_t extraction_params;
 
 #ifdef USE_AHFINDER
     bool AH_activate;
-    AHParams_t<AHFunction> AH_params;
+    AHParams_t<AHFunction<>> AH_params;
 #endif
 };
 

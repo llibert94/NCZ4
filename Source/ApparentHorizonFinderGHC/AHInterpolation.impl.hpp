@@ -235,6 +235,8 @@ int AHInterpolation_t<SurfaceGeometry, AHFunction>::interpolate()
 
     for (int i = AHFunction::vars_min(); i <= AHFunction::vars_max(); ++i)
         m_data.set_vars(query, i, i, VariableType::evolution, n);
+    for (int i = c_g11; i <= c_g33; ++i)
+        m_data.set_vars(query, i, i, VariableType::diagnostic, n);
     for (int i = AHFunction::d1_vars_min(); i <= AHFunction::d1_vars_max(); ++i)
         m_data.set_d1(query, i, i, VariableType::evolution, n);
     for (int i = AHFunction::d2_vars_min(); i <= AHFunction::d2_vars_max(); ++i)

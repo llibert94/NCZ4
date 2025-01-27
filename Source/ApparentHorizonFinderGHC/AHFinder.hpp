@@ -85,7 +85,7 @@ is more senstitive).
 
 //! Class to manage AHs and its mergers + control PETSc MPI sub-communicator
 template <class SurfaceGeometry = AHSurfaceGeometry,
-          class AHFunction = AHFunction>
+          class AHFunction = AHFunction<>, class background_t = Minkowski>
 class AHFinder
 {
     using AHInterpolation = AHInterpolation_t<SurfaceGeometry, AHFunction>;
@@ -95,7 +95,7 @@ class AHFinder
     AHFinder(){};
     ~AHFinder();
 
-    ALWAYS_INLINE ApparentHorizon<SurfaceGeometry, AHFunction> *
+    ALWAYS_INLINE ApparentHorizon<SurfaceGeometry, AHFunction, background_t> *
     get(unsigned AH_i)
     {
         CH_assert(AH_i < m_apparent_horizons.size());
@@ -161,7 +161,9 @@ class AHFinder
     std::vector<std::pair<int, int>> m_merger_pairs;
     AMRInterpolator<Lagrange<4>> *m_interpolator; //!< The interpolator pointer
 
-    std::vector<ApparentHorizon<SurfaceGeometry, AHFunction> *>
+    background_t m_background;
+
+    std::vector<ApparentHorizon<SurfaceGeometry, AHFunction, background_t> *>
         m_apparent_horizons; //!< public in case user wants to solve by himself
 };
 

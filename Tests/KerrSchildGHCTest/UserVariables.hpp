@@ -8,7 +8,7 @@
 
 #include "ArrayTools.hpp"
 #include "GHCUserVariables.hpp"
-//#include "DiagnosticVariables.hpp"
+// #include "DiagnosticVariables.hpp"
 
 /// This enum gives the index of every variable stored in the grid
 enum
@@ -24,7 +24,7 @@ static const std::array<std::string, NUM_VARS> variable_names =
     ghc_variable_names;
 } // namespace UserVariables
 
-//#include "UserVariables.inc.hpp"
+// #include "UserVariables.inc.hpp"
 
 // uncomment to look for chi instead of expansion
 // #define USE_CHI_CONTOURS

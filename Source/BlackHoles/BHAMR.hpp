@@ -7,6 +7,7 @@
 #define BHAMR_HPP_
 
 #include "GRAMR.hpp"
+#include "Minkowski.hpp"
 #if CH_SPACEDIM == 3
 #include "PunctureTracker.hpp"
 #endif
@@ -20,7 +21,7 @@
 /**
  * This object inherits from GRAMR and adds tools required for BH spacetimes
  */
-class BHAMR : public GRAMR
+template <class background_t = Minkowski> class BHAMR : public GRAMR
 {
   public:
 #if CH_SPACEDIM == 3
@@ -28,7 +29,8 @@ class BHAMR : public GRAMR
 #endif
 
 #ifdef USE_AHFINDER
-    AHFinder<> m_ah_finder;
+    AHFinder<AHSurfaceGeometry, AHFunction<background_t>, background_t>
+        m_ah_finder;
 #endif
 
     BHAMR() {}
@@ -43,6 +45,9 @@ class BHAMR : public GRAMR
         m_ah_finder.set_interpolator(a_interpolator);
 #endif
     }
+
+    // Class members
+    background_t m_background;
 };
 
 #endif /* BHAMR_HPP_ */

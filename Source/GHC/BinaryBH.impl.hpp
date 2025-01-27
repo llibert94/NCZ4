@@ -10,8 +10,8 @@
 #ifndef BINARYBH_IMPL_HPP_
 #define BINARYBH_IMPL_HPP_
 
-#include "GHCVars.hpp"
 #include "BinaryBH.hpp"
+#include "GHCVars.hpp"
 #include "VarsTools.hpp"
 #include "simd.hpp"
 

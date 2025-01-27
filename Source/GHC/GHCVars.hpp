@@ -21,9 +21,10 @@ namespace GHCVars
 /// Vars object for GHC vars, including gauge vars
 template <class data_t> struct VarsNoGauge
 {
-    data_t Pi;             //!< GHC quantity associated to Hamiltonian constraint
-    Tensor<2, data_t> g;   //!< Physical metric
-    Tensor<2, data_t> K;   //!< Extrinsic curvature
+    data_t Pi;           //!< GHC quantity associated to Hamiltonian constraint
+    Tensor<2, data_t> h; //!< Difference between the physical metric and the
+                         //!< metric of the background
+    Tensor<2, data_t> K; //!< Extrinsic curvature
     Tensor<1, data_t> Gam; //!< Physical Gamma^i variable
 
     /// Defines the mapping between members of Vars and Chombo grid
@@ -32,22 +33,20 @@ template <class data_t> struct VarsNoGauge
     void enum_mapping(mapping_function_t mapping_function)
     {
         using namespace VarsTools; // define_enum_mapping is part of VarsTools
-	define_enum_mapping(mapping_function, c_Pi, Pi);
-	// Symmetric 2-tensors
+        define_enum_mapping(mapping_function, c_Pi, Pi);
+        // Symmetric 2-tensors
         define_symmetric_enum_mapping(
-	   mapping_function, GRInterval<c_g11, D_SELECT(, c_g22, c_g33)>(), g);
-	define_symmetric_enum_mapping(
-           mapping_function, GRInterval<c_K11, D_SELECT(, c_K22, c_K33)>(), K);
-	define_enum_mapping(
-            mapping_function, GRInterval<c_Gam1, D_SELECT(, c_Gam2, c_Gam3)>(),
-            Gam); //!< The auxilliary variable Gamma^i
-
+            mapping_function, GRInterval<c_h11, D_SELECT(, c_h22, c_h33)>(), h);
+        define_symmetric_enum_mapping(
+            mapping_function, GRInterval<c_K11, D_SELECT(, c_K22, c_K33)>(), K);
+        define_enum_mapping(mapping_function,
+                            GRInterval<c_Gam1, D_SELECT(, c_Gam2, c_Gam3)>(),
+                            Gam); //!< The auxilliary variable Gamma^i
     }
 };
 
 /// Vars object for GHC vars, including gauge vars
-template <class data_t>
-struct VarsWithGauge : public VarsNoGauge<data_t>
+template <class data_t> struct VarsWithGauge : public VarsNoGauge<data_t>
 {
     data_t lapse;
     Tensor<1, data_t> shift;
@@ -70,17 +69,17 @@ struct VarsWithGauge : public VarsNoGauge<data_t>
 };
 
 /// Vars object for GHC vars needing second derivs, excluding gauge vars
-template <class data_t>
-struct Diff2VarsNoGauge
+template <class data_t> struct Diff2VarsNoGauge
 {
-    Tensor<2, data_t> g; //!< Physical metric
+    Tensor<2, data_t> h; //!< Difference between the physical metric and the
+                         //!< metric of the background
 
     template <typename mapping_function_t>
     void enum_mapping(mapping_function_t mapping_function)
     {
         using namespace VarsTools; // define_enum_mapping is part of VarsTools
         define_symmetric_enum_mapping(
-            mapping_function, GRInterval<c_g11, D_SELECT(, c_g22, c_g33)>(), g);
+            mapping_function, GRInterval<c_h11, D_SELECT(, c_h22, c_h33)>(), h);
     }
 };
 

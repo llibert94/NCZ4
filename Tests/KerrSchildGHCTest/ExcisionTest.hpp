@@ -6,10 +6,10 @@
 #ifndef EXCISIONTEST_HPP_
 #define EXCISIONTEST_HPP_
 
-#include "GHCRHS.hpp"
-#include "GHCGeometry.hpp"
 #include "Cell.hpp"
 #include "Coordinates.hpp"
+#include "GHCGeometry.hpp"
+#include "GHCRHS.hpp"
 #include "GRInterval.hpp"
 #include "Tensor.hpp"
 #include "UserVariables.hpp" //This files needs NUM_VARS - total number of components
@@ -56,7 +56,7 @@ template <class background_t> class ExcisionTest
 
             // assign values of rhs in output box
             // also zero the constraints
-            //current_cell.store_vars(matter_vars);
+            // current_cell.store_vars(matter_vars);
             current_cell.store_vars(ghc_vars);
             /*current_cell.store_vars(0.0, c_Ham);
             current_cell.store_vars(0.0, c_Mom1);

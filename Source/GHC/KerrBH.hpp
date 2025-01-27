@@ -6,10 +6,10 @@
 #ifndef KERRBH_HPP_
 #define KERRBH_HPP_
 
-#include "GHCVars.hpp"
 #include "Cell.hpp"
 #include "CoordinateTransformations.hpp"
 #include "Coordinates.hpp"
+#include "GHCVars.hpp"
 #include "Tensor.hpp"
 #include "TensorAlgebra.hpp"
 #include "UserVariables.hpp" //This files needs NUM_VARS - total number of components
@@ -17,11 +17,10 @@
 #include "simd.hpp"
 
 //! Class which computes the Kerr initial conditions per arXiv 1401.1548
-class KerrBH
+template <class background_t> class KerrBH
 {
     // Use the variable definition in CCZ4
-    template <class data_t>
-    using Vars = GHCVars::VarsWithGauge<data_t>;
+    template <class data_t> using Vars = GHCVars::VarsWithGauge<data_t>;
 
   public:
     //! Stuct for the params of the Kerr BH
@@ -37,9 +36,11 @@ class KerrBH
   protected:
     double m_dx;
     params_t m_params;
+    background_t m_background;
 
   public:
-    KerrBH(params_t a_params, double a_dx) : m_dx(a_dx), m_params(a_params)
+    KerrBH(params_t a_params, double a_dx, background_t a_background)
+        : m_dx(a_dx), m_params(a_params), m_background(a_background)
 
     {
         // check this spin param is sensible

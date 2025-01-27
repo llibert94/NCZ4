@@ -31,123 +31,106 @@ class GHCGeometry
   public:
     template <class data_t, template <typename> class vars_t,
               template <typename> class diff2_vars_t>
-    static ricci_t<data_t>
-    compute_ricci_Z(const vars_t<data_t> &vars,
-                    const vars_t<Tensor<1, data_t>> &d1,
-                    const diff2_vars_t<Tensor<2, data_t>> &d2,
-                    const Tensor<2, data_t> &g_UU, const chris_t<data_t> &chris,
-                    const Tensor<1, data_t> &Z,
-		    const Tensor<2, data_t> &bg_g, const Tensor<2, Tensor<1, data_t>> &bg_dg,
-		    const Tensor<2, Tensor<2, data_t>> &bg_d2g,
-		    const chris_t<data_t> &bg_chris, const Tensor<4, data_t> &d_bg_chris_ULL,
-		    const Tensor<4, data_t> &bg_Riemann,
-		    bool kerr_bg)
+    static ricci_t<data_t> compute_ricci_Z(
+        const vars_t<data_t> &vars, const vars_t<Tensor<1, data_t>> &d1,
+        const diff2_vars_t<Tensor<2, data_t>> &d2,
+        const Tensor<2, data_t> &g_UU, const Tensor<2, data_t> &phys_g,
+        const chris_t<data_t> &diff_chris, const Tensor<1, data_t> &Z,
+        const chris_t<data_t> &bg_chris,
+        const Tensor<4, data_t> &d_bg_chris_ULL,
+        const Tensor<4, data_t> &bg_Riemann)
     {
         ricci_t<data_t> out;
 
-	Tensor<2, data_t> h;
-        Tensor<2, Tensor<1, data_t>> dh;
-        FOR(i, j)
-        {
-            h[i][j] = vars.g[i][j] - bg_g[i][j] * kerr_bg;
-            FOR(k)
-            {
-                dh[i][j][k] = d1.g[i][j][k] - bg_dg[i][j][k] * kerr_bg;
-            }
-        }
+        Tensor<3, data_t> diff_chris_LLU = {0.};
+        Tensor<3, data_t> diff_chris_LUU = {0.};
 
-	Tensor<3, data_t> Cijk; //all indices down;
-	FOR(i, j, k)
-	{
-	    Cijk[i][j][k] = 0.5 * (dh[k][i][j] + dh[i][j][k] - dh[j][k][i]);
-	    if (kerr_bg)
-		FOR(l) Cijk[i][j][k] -= bg_chris.ULL[l][j][k] * h[i][l];
-	}
-
-	Tensor<3, data_t> chris_LLU = {0.};
-        Tensor<3, data_t> chris_LUU = {0.};
-
-        FOR(i, j, k, l) chris_LLU[i][j][k] += g_UU[k][l] * Cijk[i][j][l];
-        FOR(i, j, k, l) chris_LUU[i][j][k] += g_UU[j][l] * chris_LLU[i][l][k];
+        FOR(i, j, k, l)
+        diff_chris_LLU[i][j][k] += g_UU[k][l] * diff_chris.LLL[i][j][l];
+        FOR(i, j, k, l)
+        diff_chris_LUU[i][j][k] += g_UU[j][l] * diff_chris_LLU[i][l][k];
 
         FOR(i, j)
         {
             out.LL[i][j] = 0.;
             FOR(k)
-            {  
-		out.LL[i][j] += 0.5 * (vars.g[k][i] * d1.Gam[k][j] +
-                                    vars.g[k][j] * d1.Gam[k][i]);
-	        out.LL[i][j] += 0.5 * vars.Gam[k] * dh[i][j][k];	
+            {
+                out.LL[i][j] += 0.5 * (phys_g[k][i] * d1.Gam[k][j] +
+                                       phys_g[k][j] * d1.Gam[k][i]);
+                out.LL[i][j] += 0.5 * vars.Gam[k] * d1.h[i][j][k];
                 FOR(l)
                 {
-                    out.LL[i][j] += -0.5 * g_UU[k][l] * d2.g[i][j][k][l] -
-                                    Cijk[i][k][l] * chris_LUU[j][k][l];
-		    FOR(m, n)
-		    {
-			out.LL[i][j] += g_UU[l][n] * g_UU[k][m] * 
-					  dh[k][i][l] * dh[m][j][n];
-		    }
+                    out.LL[i][j] +=
+                        -0.5 * g_UU[k][l] * d2.h[i][j][k][l] -
+                        diff_chris.LLL[i][k][l] * diff_chris_LUU[j][k][l];
+                    FOR(m, n)
+                    {
+                        out.LL[i][j] += g_UU[l][n] * g_UU[k][m] *
+                                        d1.h[k][i][l] * d1.h[m][j][n];
+                    }
                 }
             }
         }
-	
-	if (kerr_bg)
-	{
-	    Tensor<3, data_t> bg_chris_LLL = {0.};
-	    Tensor<3, data_t> bg_chris_LLU = {0.};
-            Tensor<3, data_t> bg_chris_LUU = {0.};
 
-            FOR(i, j, k, l) bg_chris_LLL[i][j][k] += vars.g[i][l] * bg_chris.ULL[l][j][k];
-	    FOR(i, j, k, l) bg_chris_LLU[i][j][k] += g_UU[k][l] * bg_chris_LLL[i][j][l];
-            FOR(i, j, k, l) bg_chris_LUU[i][j][k] += g_UU[j][l] * bg_chris_LLU[i][l][k];
-
-	    FOR(i, j, k, l)
+        FOR(i, j, k, l)
+        {
+            out.LL[i][j] += 0.5 * vars.Gam[l] *
+                            (phys_g[k][i] * bg_chris.ULL[k][j][l] +
+                             phys_g[k][j] * bg_chris.ULL[k][i][l]);
+            out.LL[i][j] -= 0.5 * vars.Gam[k] *
+                            (bg_chris.ULL[l][i][k] * vars.h[l][j] +
+                             bg_chris.ULL[l][k][j] * vars.h[i][l]);
+            FOR(m)
             {
-                out.LL[i][j] += 0.5 * g_UU[k][l] * bg_d2g[i][j][k][l];
-		out.LL[i][j] += 0.5 * vars.Gam[l] * (vars.g[k][i] * bg_chris.ULL[k][j][l] + 
-						     vars.g[k][j] * bg_chris.ULL[k][i][l]);
-                out.LL[i][j] -= 0.5 * vars.Gam[k] * (bg_chris.ULL[l][i][k] * h[l][j] + 
-						     bg_chris.ULL[l][k][j] * h[i][l]);
-		//out.LL[i][j] += chris.LLL[i][k][l] * bg_chris_LUU[j][k][l] +
-		//		bg_chris_LLL[i][k][l] * (chris_LUU[j][k][l] -
-		//					 bg_chris_LUU[j][k][l]);
-		FOR(m) {
-		    out.LL[i][j] += 0.5 * g_UU[k][l] * (bg_chris.ULL[m][k][l] * dh[i][j][m] +
-						    	bg_chris.ULL[m][k][j] * dh[i][m][l] +
-						    	bg_chris.ULL[m][k][i] * dh[m][j][l]);
-                    out.LL[i][j] += 0.5 * g_UU[k][l] * (bg_chris.ULL[m][l][i] * dh[m][j][k] + 
-				    			d_bg_chris_ULL[m][l][i][k] * h[m][j] +
-							bg_chris.ULL[m][j][l] * dh[i][m][k] +
-							d_bg_chris_ULL[m][j][l][k] * h[i][m]);
-		    out.LL[i][j] -= 0.5 * g_UU[k][l] * (vars.g[m][i] * bg_Riemann[m][l][k][j] +
-                                                        vars.g[m][j] * bg_Riemann[m][l][k][i]);
-		    FOR(n)
-		    {
-			out.LL[i][j] -= 0.5 * g_UU[k][l] * (bg_chris.ULL[m][n][i] * h[m][j] * bg_chris.ULL[n][k][l] +
-							    bg_chris.ULL[m][l][n] * h[m][j] * bg_chris.ULL[n][k][i] +
-							    bg_chris.ULL[m][l][i] * h[m][n] * bg_chris.ULL[n][k][j] +
-							    bg_chris.ULL[m][j][n] * h[i][m] * bg_chris.ULL[n][k][l] +
-                                                            bg_chris.ULL[m][n][l] * h[i][m] * bg_chris.ULL[n][k][j] +
-                                                            bg_chris.ULL[m][j][l] * h[n][m] * bg_chris.ULL[n][k][i]);
-		    	FOR(p)
-                    	{                   
-                            out.LL[i][j] -= g_UU[l][n] * g_UU[k][m] *
-                            	              (dh[k][i][l] * (bg_chris.ULL[p][m][n] * h[p][j] +
-							        bg_chris.ULL[p][n][j] * h[m][p]) +
-					       dh[m][j][n] * (bg_chris.ULL[p][k][l] * h[p][i] +
-					   	    		bg_chris.ULL[p][l][i] * h[k][p]));
+                out.LL[i][j] += 0.5 * g_UU[k][l] *
+                                (bg_chris.ULL[m][k][l] * d1.h[i][j][m] +
+                                 bg_chris.ULL[m][k][j] * d1.h[i][m][l] +
+                                 bg_chris.ULL[m][k][i] * d1.h[m][j][l]);
+                out.LL[i][j] += 0.5 * g_UU[k][l] *
+                                (bg_chris.ULL[m][l][i] * d1.h[m][j][k] +
+                                 d_bg_chris_ULL[m][l][i][k] * vars.h[m][j] +
+                                 bg_chris.ULL[m][j][l] * d1.h[i][m][k] +
+                                 d_bg_chris_ULL[m][j][l][k] * vars.h[i][m]);
+                out.LL[i][j] -= 0.5 * g_UU[k][l] *
+                                (phys_g[m][i] * bg_Riemann[m][l][k][j] +
+                                 phys_g[m][j] * bg_Riemann[m][l][k][i]);
+                FOR(n)
+                {
+                    out.LL[i][j] -= 0.5 * g_UU[k][l] *
+                                    (bg_chris.ULL[m][n][i] * vars.h[m][j] *
+                                         bg_chris.ULL[n][k][l] +
+                                     bg_chris.ULL[m][l][n] * vars.h[m][j] *
+                                         bg_chris.ULL[n][k][i] +
+                                     bg_chris.ULL[m][l][i] * vars.h[m][n] *
+                                         bg_chris.ULL[n][k][j] +
+                                     bg_chris.ULL[m][j][n] * vars.h[i][m] *
+                                         bg_chris.ULL[n][k][l] +
+                                     bg_chris.ULL[m][n][l] * vars.h[i][m] *
+                                         bg_chris.ULL[n][k][j] +
+                                     bg_chris.ULL[m][j][l] * vars.h[n][m] *
+                                         bg_chris.ULL[n][k][i]);
+                    FOR(p)
+                    {
+                        out.LL[i][j] -=
+                            g_UU[l][n] * g_UU[k][m] *
+                            (d1.h[k][i][l] *
+                                 (bg_chris.ULL[p][m][n] * vars.h[p][j] +
+                                  bg_chris.ULL[p][n][j] * vars.h[m][p]) +
+                             d1.h[m][j][n] *
+                                 (bg_chris.ULL[p][k][l] * vars.h[p][i] +
+                                  bg_chris.ULL[p][l][i] * vars.h[k][p]));
 
-		            FOR(q)
-		            {
-			    	out.LL[i][j] += g_UU[l][n] * g_UU[k][m] * 
-						(bg_chris.ULL[p][m][n] * h[p][j] +
-                                        	 bg_chris.ULL[p][n][j] * h[m][p]) *
-						(bg_chris.ULL[q][k][l] * h[q][i] +
-                                         	 bg_chris.ULL[q][l][i] * h[k][q]);
-		            }
-                    	}
-		    }
-		}
+                        FOR(q)
+                        {
+                            out.LL[i][j] +=
+                                g_UU[l][n] * g_UU[k][m] *
+                                (bg_chris.ULL[p][m][n] * vars.h[p][j] +
+                                 bg_chris.ULL[p][n][j] * vars.h[m][p]) *
+                                (bg_chris.ULL[q][k][l] * vars.h[q][i] +
+                                 bg_chris.ULL[q][l][i] * vars.h[k][q]);
+                        }
+                    }
+                }
             }
         }
 
@@ -158,55 +141,68 @@ class GHCGeometry
 
     template <class data_t>
     static Tensor<2, data_t>
-    compute_d1_chris_contracted(const Tensor<2, data_t> &g_UU,
-                                const Tensor<2, Tensor<1, data_t>> &d1_g,
-                                const Tensor<2, Tensor<2, data_t>> &d2_g)
+    compute_d1_diff_chris_contracted(const Tensor<2, data_t> &g_UU,
+                                     const Tensor<2, data_t> &h,
+                                     const Tensor<2, Tensor<1, data_t>> &d1_h,
+                                     const Tensor<2, Tensor<2, data_t>> &d2_h,
+                                     const chris_t<data_t> &bg_chris,
+                                     const Tensor<4, data_t> &d_bg_chris_ULL)
     {
-        Tensor<2, data_t> d1_chris_contracted = 0.;
+        Tensor<2, data_t> d1_diff_chris_contracted = 0.;
         FOR(i, j)
         {
             FOR(m, n, p)
             {
-                d1_chris_contracted[i][j] +=
-                    g_UU[i][m] * g_UU[n][p] * (d2_g[m][n][j][p] - 0.5 * d2_g[n][p][j][m]);
-		FOR(q, r)
-		{
-		    d1_chris_contracted[i][j] +=
-			-d1_g[q][r][j] * (d1_g[m][n][p] - 0.5 * d1_g[n][p][m]) *
-				(g_UU[i][m] * g_UU[n][q] * g_UU[p][r] + 
-				 g_UU[n][p] * g_UU[i][q] * g_UU[m][r]);
-
-		}
+                d1_diff_chris_contracted[i][j] +=
+                    g_UU[i][m] * g_UU[n][p] *
+                    (d2_h[m][n][j][p] - 0.5 * d2_h[n][p][j][m]);
+                FOR(q, r)
+                {
+                    d1_diff_chris_contracted[i][j] +=
+                        -d1_h[q][r][j] * (d1_h[m][n][p] - 0.5 * d1_h[n][p][m]) *
+                        (g_UU[i][m] * g_UU[n][q] * g_UU[p][r] +
+                         g_UU[n][p] * g_UU[i][q] * g_UU[m][r]);
+                }
+                FOR(q)
+                {
+                    d1_diff_chris_contracted[i][j] +=
+                        -g_UU[i][m] * g_UU[n][p] *
+                        (d1_h[m][q][j] * bg_chris.ULL[q][n][p] +
+                         h[m][q] * d_bg_chris_ULL[q][n][p][j]);
+                    FOR(k, r)
+                    d1_diff_chris_contracted[i][j] +=
+                        d1_h[k][r][j] * h[m][q] * bg_chris.ULL[q][n][p] *
+                        (g_UU[i][k] * g_UU[m][r] * g_UU[n][p] +
+                         g_UU[n][k] * g_UU[p][r] * g_UU[i][m]);
+                }
             }
         }
-        return d1_chris_contracted;
+        return d1_diff_chris_contracted;
     }
 
     // This function allows adding arbitrary multiples of D_{(i}Z_{j)}
     // to the Ricci scalar rather than the default of 2 in compute_ricci_Z
     template <class data_t, template <typename> class vars_t,
               template <typename> class diff2_vars_t>
-    static ricci_t<data_t>
-    compute_ricci_Z_general(const vars_t<data_t> &vars,
-                            const vars_t<Tensor<1, data_t>> &d1,
-                            const diff2_vars_t<Tensor<2, data_t>> &d2,
-                            const Tensor<2, data_t> &g_UU,
-                            const chris_t<data_t> &chris, const double dZ_coeff)
+    static ricci_t<data_t> compute_ricci_Z_general(
+        const vars_t<data_t> &vars, const vars_t<Tensor<1, data_t>> &d1,
+        const diff2_vars_t<Tensor<2, data_t>> &d2,
+        const Tensor<2, data_t> &g_UU, const Tensor<2, data_t> phys_g,
+        const chris_t<data_t> &diff_chris, const chris_t<data_t> &bg_chris,
+        const Tensor<4, data_t> &d_bg_chris_ULL, const Tensor<4, data_t> &Riem,
+        const double dZ_coeff)
     {
         // get contributions from conformal metric and factor with zero Z vector
         Tensor<1, data_t> Z0 = 0.;
-	Tensor<4, data_t> d_chris = {0.};
-	Tensor<4, data_t> Riem = {0.};
-        auto ricci = compute_ricci_Z(vars, d1, d2, g_UU, chris, Z0, 
-			g, d1.g, d2.g, chris, d_chris, Riem, 0);
-	// TO BE GENERALISED FOR A BACKGROUND!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        auto ricci = compute_ricci_Z(vars, d1, d2, g_UU, phys_g, diff_chris, Z0,
+                                     bg_chris, d_bg_chris_ULL, Riem);
 
         // need to add term to correct for d1.Gamma (includes Z contribution)
         // and Gamma in ricci_hat
-        auto d1_chris_contracted =
-            compute_d1_chris_contracted(g_UU, d1.g, d2.g);
+        auto d1_diff_chris_contracted = compute_d1_diff_chris_contracted(
+            g_UU, vars.h, d1.h, d2.h, bg_chris, d_bg_chris_ULL);
         Tensor<1, data_t> Z;
-        FOR(i) { Z[i] = 0.5 * (vars.Gam[i] - chris.contracted[i]); }
+        FOR(i) { Z[i] = 0.5 * (vars.Gam[i] - diff_chris.contracted[i]); }
         FOR(i, j)
         {
             FOR(m)
@@ -214,11 +210,11 @@ class GHCGeometry
                 // This corrects for the \hat{Gamma}s in ricci_hat
                 ricci.LL[i][j] +=
                     (1. - 0.5 * dZ_coeff) * 0.5 *
-                    (vars.g[m][i] *
-                         (d1_chris_contracted[m][j] - d1.Gam[m][j]) +
-                     vars.g[m][j] *
-                         (d1_chris_contracted[m][i] - d1.Gam[m][i]) +
-                     (chris.contracted[m] - vars.Gam[m]) * d1.g[i][j][m]);
+                    (phys_g[m][i] *
+                         (d1_diff_chris_contracted[m][j] - d1.Gam[m][j]) +
+                     phys_g[m][j] *
+                         (d1_diff_chris_contracted[m][i] - d1.Gam[m][i]) +
+                     (diff_chris.contracted[m] - vars.Gam[m]) * d1.h[i][j][m]);
             }
         }
         ricci.scalar = TensorAlgebra::compute_trace(ricci.LL, g_UU);
@@ -229,13 +225,15 @@ class GHCGeometry
     // Z vector - used e.g. in the constraint calculations.
     template <class data_t, template <typename> class vars_t,
               template <typename> class diff2_vars_t>
-    static ricci_t<data_t>
-    compute_ricci(const vars_t<data_t> &vars,
-                  const vars_t<Tensor<1, data_t>> &d1,
-                  const diff2_vars_t<Tensor<2, data_t>> &d2,
-                  const Tensor<2, data_t> &g_UU, const chris_t<data_t> &chris)
+    static ricci_t<data_t> compute_ricci(
+        const vars_t<data_t> &vars, const vars_t<Tensor<1, data_t>> &d1,
+        const diff2_vars_t<Tensor<2, data_t>> &d2,
+        const Tensor<2, data_t> &g_UU, const Tensor<2, data_t> &phys_g,
+        const chris_t<data_t> &diff_chris, const chris_t<data_t> &bg_chris,
+        const Tensor<4, data_t> &d_bg_chris_ULL, const Tensor<4, data_t> &Riem)
     {
-        return compute_ricci_Z_general(vars, d1, d2, g_UU, chris, 0.);
+        return compute_ricci_Z_general(vars, d1, d2, g_UU, phys_g, diff_chris,
+                                       bg_chris, d_bg_chris_ULL, Riem, 0.);
     }
 };
 

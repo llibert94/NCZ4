@@ -35,9 +35,10 @@ class ADMQuantitiesExtraction : public SphericalExtraction
 
     //! The old constructor which assumes it is called in specificPostTimeStep
     //! so the first time step is when m_time == m_dt
-    ADMQuantitiesExtraction(const spherical_extraction_params_t a_params, double a_dt,
-                            double a_time, double a_restart_time = 0.0,
-                            int a_c_Madm = -1, int a_c_Jadm = -1)
+    ADMQuantitiesExtraction(const spherical_extraction_params_t a_params,
+                            double a_dt, double a_time,
+                            double a_restart_time = 0.0, int a_c_Madm = -1,
+                            int a_c_Jadm = -1)
         : ADMQuantitiesExtraction(a_params, a_dt, a_time, (a_dt == a_time),
                                   a_restart_time, a_c_Madm, a_c_Jadm)
     {

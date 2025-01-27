@@ -7,13 +7,13 @@
 #include "AMRReductions.hpp"
 #include "BinaryBH.hpp"
 #include "BoxLoops.hpp"
-#include "GammaCalculator.hpp"
-#include "GHCRHS.hpp"
-#include "PunctureBoxesTaggingCriterion.hpp"
 #include "ComputePack.hpp"
+#include "GHCRHS.hpp"
+#include "GammaCalculator.hpp"
 #include "NanCheck.hpp"
 #include "NewConstraints.hpp"
 #include "PositiveChiAndAlpha.hpp"
+#include "PunctureBoxesTaggingCriterion.hpp"
 #include "PunctureTracker.hpp"
 #include "SetValue.hpp"
 #include "SixthOrderDerivatives.hpp"
@@ -26,8 +26,8 @@
 void BinaryBHLevel::specificAdvance()
 {
     // Enforce the positive chi and alpha
-    BoxLoops::loop(PositiveChiAndAlpha(m_p.min_chi, m_p.min_lapse),
-                   m_state_new, m_state_new, INCLUDE_GHOST_CELLS);
+    BoxLoops::loop(PositiveChiAndAlpha(m_p.min_chi, m_p.min_lapse), m_state_new,
+                   m_state_new, INCLUDE_GHOST_CELLS);
 
     // Check for nan's
     if (m_p.nan_check)
@@ -69,8 +69,8 @@ void BinaryBHLevel::specificEvalRHS(GRLevelData &a_soln, GRLevelData &a_rhs,
                                     const double a_time)
 {
     // Enforce positive chi and alpha
-    BoxLoops::loop(PositiveChiAndAlpha(m_p.min_chi, m_p.min_lapse),
-                   a_soln, a_soln, INCLUDE_GHOST_CELLS);
+    BoxLoops::loop(PositiveChiAndAlpha(m_p.min_chi, m_p.min_lapse), a_soln,
+                   a_soln, INCLUDE_GHOST_CELLS);
 
     // Calculate GHC right hand side
     if (m_p.max_spatial_derivative_order == 4)
@@ -93,9 +93,7 @@ void BinaryBHLevel::specificUpdateODE(GRLevelData &a_soln,
 {
 }
 
-void BinaryBHLevel::preTagCells()
-{
-}
+void BinaryBHLevel::preTagCells() {}
 
 // specify the cells to tag
 void BinaryBHLevel::computeTaggingCriterion(
@@ -111,13 +109,13 @@ void BinaryBHLevel::computeTaggingCriterion(
                            m_tp_amr.m_two_punctures.mp};
 #else
         puncture_masses = {m_p.bh1_params.mass, m_p.bh2_params.mass};
-#endif /* USE_TWOPUNCTURES */ 
+#endif /* USE_TWOPUNCTURES */
         auto puncture_coords =
             m_bh_amr.m_puncture_tracker.get_puncture_coords();
-        BoxLoops::loop(PunctureBoxesTaggingCriterion(
-                           m_dx, m_level, m_p.max_level,
-                           puncture_coords, puncture_masses),
-                       current_state, tagging_criterion);
+        BoxLoops::loop(
+            PunctureBoxesTaggingCriterion(m_dx, m_level, m_p.max_level,
+                                          puncture_coords, puncture_masses),
+            current_state, tagging_criterion);
     }
     /*else
     {
@@ -145,9 +143,9 @@ void BinaryBHLevel::specificPostTimeStep()
         {
             // Populate the Weyl Scalar values on the grid
             fillAllGhosts();
-            BoxLoops::loop(
-                Weyl4(m_p.extraction_params.center, m_dx),
-                m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
+            BoxLoops::loop(Weyl4(m_p.extraction_params.center, m_dx),
+                           m_state_new, m_state_diagnostics,
+                           EXCLUDE_GHOST_CELLS);
 
             // Do the extraction on the min extraction level
             if (m_level == min_level)
@@ -221,11 +219,10 @@ void BinaryBHLevel::prePlotLevel()
     fillAllGhosts();
     if (m_p.activate_extraction == 1)
     {
-        BoxLoops::loop(
-            make_compute_pack(
-                Weyl4(m_p.extraction_params.center, m_dx),
-                Constraints(m_dx, c_Ham, Interval(c_Mom1, c_Mom3))),
-            m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
+        BoxLoops::loop(make_compute_pack(
+                           Weyl4(m_p.extraction_params.center, m_dx),
+                           Constraints(m_dx, c_Ham, Interval(c_Mom1, c_Mom3))),
+                       m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
     }
 }
 #endif /* CH_USE_HDF5 */

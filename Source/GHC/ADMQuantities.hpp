@@ -6,11 +6,11 @@
 #ifndef ADMQUANTITIES_HPP_
 #define ADMQUANTITIES_HPP_
 
-#include "GHCVars.hpp"
-#include "GHCGeometry.hpp"
 #include "Cell.hpp"
 #include "Coordinates.hpp"
 #include "FourthOrderDerivatives.hpp"
+#include "GHCGeometry.hpp"
+#include "GHCVars.hpp"
 #include "GRInterval.hpp"
 #include "Tensor.hpp"
 #include "TensorAlgebra.hpp"
@@ -19,14 +19,13 @@
 #include "simd.hpp"
 
 //! Calculates the ADM mass
-class ADMQuantities
+template <class background_t> class ADMQuantities
 {
     // Use the variable definition in GHCVars - only require the key
     // vars
     template <class data_t> using Vars = GHCVars::VarsNoGauge<data_t>;
 
-    template <class data_t>
-    using Diff1Vars = GHCVars::Diff2VarsNoGauge<data_t>;
+    template <class data_t> using Diff1Vars = GHCVars::Diff2VarsNoGauge<data_t>;
 
   public:
     enum DIR
@@ -37,9 +36,11 @@ class ADMQuantities
     };
 
     ADMQuantities(const std::array<double, CH_SPACEDIM> &a_center, double a_dx,
-                  int a_c_Madm = -1, int a_c_Jadm = -1, double a_G_Newton = 1.0)
-        : m_deriv(a_dx), m_center(a_center), m_G_Newton(a_G_Newton),
-          m_c_Madm(a_c_Madm), m_c_Jadm(a_c_Jadm), m_dir(Z)
+                  background_t a_background, int a_c_Madm = -1,
+                  int a_c_Jadm = -1, double a_G_Newton = 1.0)
+        : m_deriv(a_dx), m_background(a_background), m_center(a_center),
+          m_G_Newton(a_G_Newton), m_c_Madm(a_c_Madm), m_c_Jadm(a_c_Jadm),
+          m_dir(Z)
     {
     }
 
@@ -54,16 +55,24 @@ class ADMQuantities
         const auto vars = current_cell.template load_vars<Vars>();
         const auto d1 = m_deriv.template diff1<Diff1Vars>(current_cell);
 
+        Coordinates<data_t> coords(current_cell, m_deriv.m_dx, m_center);
+
         using namespace TensorAlgebra;
-        const auto g_UU = compute_inverse_sym(vars.g);
+
+        Tensor<2, data_t> bg_g;
+        Tensor<2, Tensor<1, data_t>> bg_dg;
+        m_background.compute_g_and_dg(bg_g, bg_dg, coords);
+
+        Tensor<2, data_t> phys_g;
+        FOR(i, j) { phys_g[i][j] = vars.h[i][j] + bg_g[i][j]; }
+        const auto g_UU = compute_inverse_sym(phys_g);
 
         // Surface element for integration
-        Coordinates<data_t> coords(current_cell, m_deriv.m_dx, m_center);
         Tensor<1, data_t> x = {coords.x, coords.y, coords.z};
         Tensor<1, data_t> dS_U = x;
 
         data_t dS_norm = 0.;
-        FOR(i, j) { dS_norm += vars.g[i][j] * dS_U[i] * dS_U[j]; }
+        FOR(i, j) { dS_norm += phys_g[i][j] * dS_U[i] * dS_U[j]; }
         dS_norm = sqrt(dS_norm);
         FOR(i) { dS_U[i] /= dS_norm; }
 
@@ -72,7 +81,7 @@ class ADMQuantities
         {
             // dS_L[i] = dS_U[i];
             dS_L[i] = 0.;
-            FOR(j) { dS_L[i] += vars.g[i][j] * dS_U[j]; }
+            FOR(j) { dS_L[i] += phys_g[i][j] * dS_U[j]; }
         }
 
         if (m_c_Madm >= 0)
@@ -80,9 +89,10 @@ class ADMQuantities
             data_t Madm = 0.0;
             FOR(i, j, k, l)
             {
-                Madm += dS_L[i] / (16. * M_PI * m_G_Newton) *
-                        g_UU[j][k] * g_UU[i][l] *
-                        (d1.g[l][k][j] - d1.g[j][k][l]);
+                Madm += dS_L[i] / (16. * M_PI * m_G_Newton) * g_UU[j][k] *
+                        g_UU[i][l] *
+                        (d1.h[l][k][j] - d1.h[j][k][l] + bg_dg[l][k][j] -
+                         bg_dg[j][k][l]);
             }
 
             // assign values of ADM Mass in output box
@@ -98,7 +108,7 @@ class ADMQuantities
             // not tensor (eps_tensor = eps_symbol * chi^-1.5)
             const Tensor<3, double> epsilon = TensorAlgebra::epsilon();
 
-	    data_t trK = TensorAlgebra::compute_trace(vars.K, g_UU);
+            data_t trK = TensorAlgebra::compute_trace(vars.K, g_UU);
 
             FOR(i, j, k)
             {
@@ -122,6 +132,7 @@ class ADMQuantities
   protected:
     const FourthOrderDerivatives
         m_deriv; //!< An object for calculating derivatives of the variables
+    background_t m_background;
     const std::array<double, CH_SPACEDIM> &m_center;
     const double m_G_Newton; //!< Newton's constant
     const int m_c_Madm, m_c_Jadm;

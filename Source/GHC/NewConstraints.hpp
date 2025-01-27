@@ -8,10 +8,10 @@
 #ifndef NEWCONSTRAINTS_HPP_
 #define NEWCONSTRAINTS_HPP_
 
-#include "GHCVars.hpp"
 #include "Cell.hpp"
 #include "FArrayBox.H"
 #include "FourthOrderDerivatives.hpp"
+#include "GHCVars.hpp"
 #include "Tensor.hpp"
 #include "simd.hpp"
 
@@ -19,15 +19,15 @@
 
 #include <array>
 
-class Constraints
+template <class background_t> class Constraints
 {
   public:
     /// CCZ4 variables
-    template <class data_t> using MetricVars = GHCVars::VarsNoGauge<data_t>;
+    template <class data_t> using MetricVars = GHCVars::VarsWithGauge<data_t>;
 
     /// CCZ4 variables
     template <class data_t>
-    using Diff2Vars = GHCVars::Diff2VarsNoGauge<data_t>;
+    using Diff2Vars = GHCVars::Diff2VarsWithGauge<data_t>;
 
     /// Vars object for Constraints
     template <class data_t> struct Vars
@@ -45,8 +45,9 @@ class Constraints
     // conformally decomposed expressions which can be used in to normalize
     // the constraint violations
     // Any zero-length Interval or negative var is not calculated
-    Constraints(double dx, int a_c_Ham, const Interval &a_c_Moms,
-                int a_c_Ham_abs_terms = -1,
+    Constraints(double dx, const std::array<double, CH_SPACEDIM> a_center,
+                background_t a_background, int a_c_Ham,
+                const Interval &a_c_Moms, int a_c_Ham_abs_terms = -1,
                 const Interval &a_c_Moms_abs_terms = Interval(),
                 double cosmological_constant = 0.0);
 
@@ -59,14 +60,15 @@ class Constraints
     const int m_c_Ham_abs_terms = -1;
     const Interval m_c_Moms_abs_terms;
     double m_cosmological_constant;
+    background_t m_background;
+    const std::array<double, CH_SPACEDIM> m_center;
 
     template <class data_t, template <typename> class vars_t,
               template <typename> class diff2_vars_t>
     Vars<data_t> constraint_equations(const vars_t<data_t> &vars,
                                       const vars_t<Tensor<1, data_t>> &d1,
                                       const diff2_vars_t<Tensor<2, data_t>> &d2,
-                                      const Tensor<2, data_t> &g_UU,
-                                      const chris_t<data_t> &chris) const;
+                                      const Coordinates<data_t> &coords) const;
 
     template <class data_t>
     void store_vars(Vars<data_t> &out, Cell<data_t> &current_cell) const;

@@ -12,8 +12,8 @@
 
 #include "FilesystemTools.hpp"
 
-template <class SurfaceGeometry, class AHFunction>
-AHFinder<SurfaceGeometry, AHFunction>::~AHFinder()
+template <class SurfaceGeometry, class AHFunction, class background_t>
+AHFinder<SurfaceGeometry, AHFunction, background_t>::~AHFinder()
 {
     // destroy horizon pointers and finalize PETSc
     for (auto &ah : m_apparent_horizons)
@@ -21,9 +21,9 @@ AHFinder<SurfaceGeometry, AHFunction>::~AHFinder()
     PETScCommunicator::finalize();
 }
 
-template <class SurfaceGeometry, class AHFunction>
+template <class SurfaceGeometry, class AHFunction, class background_t>
 template <class AHInitialGuess>
-int AHFinder<SurfaceGeometry, AHFunction>::add_ah(
+int AHFinder<SurfaceGeometry, AHFunction, background_t>::add_ah(
     const SurfaceGeometry &a_coord_system, AHInitialGuess a_initial_guess,
     const AHParams &a_params, bool solve_first_step)
 {
@@ -32,8 +32,8 @@ int AHFinder<SurfaceGeometry, AHFunction>::add_ah(
                   a_params, solve_first_step);
 }
 
-template <class SurfaceGeometry, class AHFunction>
-int AHFinder<SurfaceGeometry, AHFunction>::add_ah(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+int AHFinder<SurfaceGeometry, AHFunction, background_t>::add_ah(
     const SurfaceGeometry &a_coord_system,
     const AHInitialGuessPtr &a_initial_guess, const AHParams &a_params,
     bool solve_first_step)
@@ -52,7 +52,7 @@ int AHFinder<SurfaceGeometry, AHFunction>::add_ah(
     AHInterpolation interp(a_coord_system, m_interpolator);
 
     m_apparent_horizons.push_back(
-        new ApparentHorizon<SurfaceGeometry, AHFunction>(
+        new ApparentHorizon<SurfaceGeometry, AHFunction, background_t>(
             interp, a_initial_guess, a_params,
             a_params.stats_prefix + std::to_string(num_ah + 1),
             a_params.coords_prefix + std::to_string(num_ah + 1) + "_",
@@ -62,8 +62,8 @@ int AHFinder<SurfaceGeometry, AHFunction>::add_ah(
     return num_ah;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-int AHFinder<SurfaceGeometry, AHFunction>::add_ah(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+int AHFinder<SurfaceGeometry, AHFunction, background_t>::add_ah(
     const SurfaceGeometry &a_coord_system, double a_initial_guess,
     const AHParams &a_params, bool solve_first_step)
 {
@@ -73,8 +73,8 @@ int AHFinder<SurfaceGeometry, AHFunction>::add_ah(
         a_params, solve_first_step);
 }
 
-template <class SurfaceGeometry, class AHFunction>
-int AHFinder<SurfaceGeometry, AHFunction>::add_ah_merger(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+int AHFinder<SurfaceGeometry, AHFunction, background_t>::add_ah_merger(
     int ah1, int ah2, const AHParams &a_params)
 {
     CH_assert(a_params.track_center); // center tracking must be on for mergers
@@ -99,9 +99,9 @@ int AHFinder<SurfaceGeometry, AHFunction>::add_ah_merger(
     return num;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void AHFinder<SurfaceGeometry, AHFunction>::solve(double a_dt, double a_time,
-                                                  double a_restart_time)
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void AHFinder<SurfaceGeometry, AHFunction, background_t>::solve(
+    double a_dt, double a_time, double a_restart_time)
 {
     CH_TIME("AHFinder<SurfaceGeometry, AHFunction>::solve");
 
@@ -254,8 +254,8 @@ void AHFinder<SurfaceGeometry, AHFunction>::solve(double a_dt, double a_time,
     delete[] ah_solved;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-bool AHFinder<SurfaceGeometry, AHFunction>::need_diagnostics(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+bool AHFinder<SurfaceGeometry, AHFunction, background_t>::need_diagnostics(
     double a_dt, double a_time) const
 {
     bool out = false;
@@ -265,8 +265,8 @@ bool AHFinder<SurfaceGeometry, AHFunction>::need_diagnostics(
     return out;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-bool AHFinder<SurfaceGeometry, AHFunction>::solve_merger(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+bool AHFinder<SurfaceGeometry, AHFunction, background_t>::solve_merger(
     int ah1, int ah2, AHInitialGuessPtr &initial_guess_merger,
     std::array<double, CH_SPACEDIM> &center_merger)
 {
@@ -348,8 +348,8 @@ bool AHFinder<SurfaceGeometry, AHFunction>::solve_merger(
     return do_solve;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void AHFinder<SurfaceGeometry, AHFunction>::set_origins(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void AHFinder<SurfaceGeometry, AHFunction, background_t>::set_origins(
     const std::vector<std::array<double, CH_SPACEDIM>> &origins,
     bool includes_mergers)
 {

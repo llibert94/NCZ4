@@ -66,7 +66,7 @@ Weyl4::compute_epsilon3_LUU(const Vars<data_t> &vars,
     }
     // projection of 4-antisymetric tensor to 3-tensor on hypersurface
     // note last index contracted as per footnote 86 pg 290 Alcubierre
-    
+
     const data_t detg = TensorAlgebra::compute_determinant_sym(vars.g);
     const data_t chi = simd_max(pow(detg, -1. / 3.), 1e-4);
 
@@ -74,8 +74,8 @@ Weyl4::compute_epsilon3_LUU(const Vars<data_t> &vars,
     {
         for (int l = 0; l < 4; ++l)
         {
-            epsilon3_LLL[i][j][k] += n_U[l] * epsilon4[i][j][k][l] *
-                                     vars.lapse / (chi * sqrt(chi));
+            epsilon3_LLL[i][j][k] +=
+                n_U[l] * epsilon4[i][j][k][l] * vars.lapse / (chi * sqrt(chi));
         }
     }
     // rasing indices
@@ -83,8 +83,8 @@ Weyl4::compute_epsilon3_LUU(const Vars<data_t> &vars,
     {
         FOR(m, n)
         {
-            epsilon3_LUU[i][j][k] += epsilon3_LLL[i][m][n] * g_UU[m][j] *
-                                     g_UU[n][k];
+            epsilon3_LUU[i][j][k] +=
+                epsilon3_LLL[i][m][n] * g_UU[m][j] * g_UU[n][k];
         }
     }
 
@@ -105,8 +105,8 @@ EBFields_t<data_t> Weyl4::compute_EB_fields(
     EBFields_t<data_t> out;
 
     // Extrinsic curvature
-    //Tensor<2, data_t> K_tensor;
-    //Tensor<3, data_t> d1_K_tensor;
+    // Tensor<2, data_t> K_tensor;
+    // Tensor<3, data_t> d1_K_tensor;
     Tensor<3, data_t> covariant_deriv_K_tensor;
 
     // Compute inverse, Christoffel symbols, Ricci tensor and Z terms
@@ -136,8 +136,8 @@ EBFields_t<data_t> Weyl4::compute_EB_fields(
         out.B[i][j] = 0.0;
     }
 
-   data_t tr_K = TensorAlgebra::compute_trace(vars.K, g_UU);
-   data_t Theta = 0.5 * (tr_K + vars.Pi);
+    data_t tr_K = TensorAlgebra::compute_trace(vars.K, g_UU);
+    data_t Theta = 0.5 * (tr_K + vars.Pi);
 
     FOR(i, j)
     {
@@ -146,8 +146,7 @@ EBFields_t<data_t> Weyl4::compute_EB_fields(
 
         FOR(k, l)
         {
-            out.E[i][j] +=
-                -vars.K[i][k] * vars.K[l][j] * g_UU[k][l];
+            out.E[i][j] += -vars.K[i][k] * vars.K[l][j] * g_UU[k][l];
 
             out.B[i][j] +=
                 epsilon3_LUU[i][k][l] * covariant_deriv_K_tensor[l][j][k];
@@ -240,8 +239,8 @@ Weyl4::compute_null_tetrad(const Vars<data_t> &vars,
 
     FOR(i, j, k, m)
     {
-        out.w[i] += 1. / (chi * sqrt(chi)) * g_UU[i][j] * epsilon[j][k][m] * out.v[k] *
-                    out.u[m];
+        out.w[i] += 1. / (chi * sqrt(chi)) * g_UU[i][j] * epsilon[j][k][m] *
+                    out.v[k] * out.u[m];
     }
 
     // Gram Schmitt orthonormalisation

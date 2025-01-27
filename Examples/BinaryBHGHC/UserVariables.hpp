@@ -7,8 +7,8 @@
 #define USERVARIABLES_HPP
 
 #include "ArrayTools.hpp"
-#include "GHCUserVariables.hpp"
 #include "DiagnosticVariables.hpp"
+#include "GHCUserVariables.hpp"
 
 /// This enum gives the index of every variable stored in the grid
 enum

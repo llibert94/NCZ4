@@ -26,8 +26,8 @@
 // Chombo MPI functions
 #include "SPMD.H"
 
-template <class SurfaceGeometry, class AHFunction>
-ApparentHorizon<SurfaceGeometry, AHFunction>::ApparentHorizon(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::ApparentHorizon(
     const AHInterpolation &a_interp, const AHInitialGuessPtr &a_initial_guess,
     const AHParams &a_params, const std::string &a_stats,
     const std::string &a_coords, bool solve_first_step)
@@ -77,8 +77,8 @@ ApparentHorizon<SurfaceGeometry, AHFunction>::ApparentHorizon(
     restart(solve_first_step);
 }
 
-template <class SurfaceGeometry, class AHFunction>
-bool ApparentHorizon<SurfaceGeometry, AHFunction>::good_to_go(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+bool ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::good_to_go(
     double a_dt, double a_time) const
 {
     if (a_time < m_params.start_time - 1.e-7 /*just to be safe*/)
@@ -96,16 +96,16 @@ bool ApparentHorizon<SurfaceGeometry, AHFunction>::good_to_go(
     return do_solve(a_dt, a_time) && !(has_been_found() && is_lost);
 }
 
-template <class SurfaceGeometry, class AHFunction>
-bool ApparentHorizon<SurfaceGeometry, AHFunction>::do_solve(double a_dt,
-                                                            double a_time) const
+template <class SurfaceGeometry, class AHFunction, class background_t>
+bool ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::do_solve(
+    double a_dt, double a_time) const
 {
     CH_assert(a_dt != 0); // Check if time was set!
     return !(((int)(std::round(a_time / a_dt))) % m_params.solve_interval);
 }
-template <class SurfaceGeometry, class AHFunction>
-bool ApparentHorizon<SurfaceGeometry, AHFunction>::do_print(double a_dt,
-                                                            double a_time) const
+template <class SurfaceGeometry, class AHFunction, class background_t>
+bool ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::do_print(
+    double a_dt, double a_time) const
 {
     CH_assert(a_dt != 0); // Check if time was set!
     return (get_converged() || !has_been_found()) &&
@@ -113,29 +113,30 @@ bool ApparentHorizon<SurfaceGeometry, AHFunction>::do_print(double a_dt,
              (m_params.solve_interval * m_params.print_interval));
 }
 
-template <class SurfaceGeometry, class AHFunction>
+template <class SurfaceGeometry, class AHFunction, class background_t>
 const std::array<double, CH_SPACEDIM> &
-ApparentHorizon<SurfaceGeometry, AHFunction>::get_origin() const
+ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::get_origin() const
 {
     return solver.get_origin();
 }
 
-template <class SurfaceGeometry, class AHFunction>
+template <class SurfaceGeometry, class AHFunction, class background_t>
 const AHInterpolation_t<SurfaceGeometry, AHFunction> &
-ApparentHorizon<SurfaceGeometry, AHFunction>::get_ah_interp() const
+ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::get_ah_interp()
+    const
 {
     return solver.m_interp;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-PETScAHSolver<SurfaceGeometry, AHFunction> &
-ApparentHorizon<SurfaceGeometry, AHFunction>::get_petsc_solver()
+template <class SurfaceGeometry, class AHFunction, class background_t>
+PETScAHSolver<SurfaceGeometry, AHFunction, background_t> &
+ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::get_petsc_solver()
 {
     return solver;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void ApparentHorizon<SurfaceGeometry, AHFunction>::set_origin(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::set_origin(
     const std::array<double, CH_SPACEDIM> &a_origin)
 {
     solver.set_origin(a_origin);
@@ -143,60 +144,67 @@ void ApparentHorizon<SurfaceGeometry, AHFunction>::set_origin(
     origin_already_updated = true;
 }
 
-template <class SurfaceGeometry, class AHFunction>
+template <class SurfaceGeometry, class AHFunction, class background_t>
 const std::array<double, CH_SPACEDIM> &
-ApparentHorizon<SurfaceGeometry, AHFunction>::get_center() const
+ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::get_center() const
 {
     return m_old_centers[0];
 }
-template <class SurfaceGeometry, class AHFunction>
-bool ApparentHorizon<SurfaceGeometry, AHFunction>::get_converged() const
+template <class SurfaceGeometry, class AHFunction, class background_t>
+bool ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::get_converged()
+    const
 {
     return m_converged;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-int ApparentHorizon<SurfaceGeometry, AHFunction>::get_failed_convergences()
-    const
+template <class SurfaceGeometry, class AHFunction, class background_t>
+int ApparentHorizon<SurfaceGeometry, AHFunction,
+                    background_t>::get_failed_convergences() const
 {
     return m_num_failed_convergences;
 }
-template <class SurfaceGeometry, class AHFunction>
-bool ApparentHorizon<SurfaceGeometry, AHFunction>::has_been_found() const
+template <class SurfaceGeometry, class AHFunction, class background_t>
+bool ApparentHorizon<SurfaceGeometry, AHFunction,
+                     background_t>::has_been_found() const
 {
     return m_has_been_found;
 }
-template <class SurfaceGeometry, class AHFunction>
-double ApparentHorizon<SurfaceGeometry, AHFunction>::get_max_F() const
+template <class SurfaceGeometry, class AHFunction, class background_t>
+double
+ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::get_max_F() const
 {
     if (m_max_F <= 0.)
         calculate_minmax_F();
     return m_max_F;
 }
-template <class SurfaceGeometry, class AHFunction>
-double ApparentHorizon<SurfaceGeometry, AHFunction>::get_min_F() const
+template <class SurfaceGeometry, class AHFunction, class background_t>
+double
+ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::get_min_F() const
 {
     if (m_min_F <= 0.)
         calculate_minmax_F();
     return m_min_F;
 }
-template <class SurfaceGeometry, class AHFunction>
-double ApparentHorizon<SurfaceGeometry, AHFunction>::get_ave_F() const
+template <class SurfaceGeometry, class AHFunction, class background_t>
+double
+ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::get_ave_F() const
 {
     if (m_ave_F <= 0.)
         calculate_average_F();
     return m_ave_F;
 }
-template <class SurfaceGeometry, class AHFunction>
-double ApparentHorizon<SurfaceGeometry, AHFunction>::get_std_F() const
+template <class SurfaceGeometry, class AHFunction, class background_t>
+double
+ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::get_std_F() const
 {
     if (m_std_F <= 0.)
         calculate_average_F();
     return m_std_F;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void ApparentHorizon<SurfaceGeometry, AHFunction>::predict_next_origin()
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void ApparentHorizon<SurfaceGeometry, AHFunction,
+                     background_t>::predict_next_origin()
 {
     std::array<double, CH_SPACEDIM> new_center = m_old_centers[0];
     if (m_converged >= 3) // add 2nd derivative
@@ -249,9 +257,9 @@ void ApparentHorizon<SurfaceGeometry, AHFunction>::predict_next_origin()
     set_origin(new_center);
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void ApparentHorizon<SurfaceGeometry, AHFunction>::update_old_centers(
-    std::array<double, CH_SPACEDIM> new_center)
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::
+    update_old_centers(std::array<double, CH_SPACEDIM> new_center)
 {
     FOR(a)
     {
@@ -261,10 +269,9 @@ void ApparentHorizon<SurfaceGeometry, AHFunction>::update_old_centers(
     }
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void ApparentHorizon<SurfaceGeometry, AHFunction>::solve(double a_dt,
-                                                         double a_time,
-                                                         double a_restart_time)
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::solve(
+    double a_dt, double a_time, double a_restart_time)
 {
     CH_TIME("ApparentHorizon::solve");
     if (!good_to_go(a_dt, a_time))
@@ -427,8 +434,8 @@ void ApparentHorizon<SurfaceGeometry, AHFunction>::solve(double a_dt,
     }
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void ApparentHorizon<SurfaceGeometry, AHFunction>::write_outputs(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::write_outputs(
     double a_dt, double a_time, double a_restart_time)
 {
     // print step. Printing the step allows the user to modify params as
@@ -560,8 +567,9 @@ void ApparentHorizon<SurfaceGeometry, AHFunction>::write_outputs(
                           m_params.print_geometry_data);
     }
 }
-template <class SurfaceGeometry, class AHFunction>
-void ApparentHorizon<SurfaceGeometry, AHFunction>::check_convergence()
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void ApparentHorizon<SurfaceGeometry, AHFunction,
+                     background_t>::check_convergence()
 {
     CH_TIME("ApparentHorizon::check_convergence");
 
@@ -624,8 +632,8 @@ void ApparentHorizon<SurfaceGeometry, AHFunction>::check_convergence()
         m_has_been_found = true; // finally found :D
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void ApparentHorizon<SurfaceGeometry, AHFunction>::restart(
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::restart(
     bool solve_first_step)
 {
     CH_TIME("ApparentHorizon::restart");
@@ -1013,10 +1021,11 @@ void ApparentHorizon<SurfaceGeometry, AHFunction>::restart(
         solve(current_time == 0. ? 1. : level_dt, current_time, current_time);
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void ApparentHorizon<SurfaceGeometry, AHFunction>::write_coords_file(
-    double a_dt, double a_time, double a_restart_time,
-    const std::string &filename, bool write_geometry_data) const
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::
+    write_coords_file(double a_dt, double a_time, double a_restart_time,
+                      const std::string &filename,
+                      bool write_geometry_data) const
 {
     CH_TIME("ApparentHorizon::write_coords_file");
 
@@ -1183,7 +1192,7 @@ void ApparentHorizon<SurfaceGeometry, AHFunction>::write_coords_file(
                     const auto coords = solver.m_interp.get_coords(idx);
                     const auto coords_cart =
                         solver.m_interp.get_cartesian_coords(idx);
-                    AHFunction func(data, coords, coords_cart);
+                    AHFunction func(data, coords, coords_cart, m_background);
                     func.write_vars(
                         &output[idx * num_components_total + CH_SPACEDIM + el]);
                 }
@@ -1272,8 +1281,9 @@ void ApparentHorizon<SurfaceGeometry, AHFunction>::write_coords_file(
     }
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void ApparentHorizon<SurfaceGeometry, AHFunction>::check_integration_methods()
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void ApparentHorizon<SurfaceGeometry, AHFunction,
+                     background_t>::check_integration_methods()
 {
     // check if integration methods are valid given periodicity and number of
     // points
@@ -1310,10 +1320,10 @@ void ApparentHorizon<SurfaceGeometry, AHFunction>::check_integration_methods()
 // OLD method to calculate the spin using the 1D equator length
 // Adopted area integral 'calculate_angular_momentum_J' that allows to get the
 // direction of the spin as well
-template <class SurfaceGeometry, class AHFunction>
+template <class SurfaceGeometry, class AHFunction, class background_t>
 double
-ApparentHorizon<SurfaceGeometry, AHFunction>::calculate_spin_dimensionless(
-    double a_area)
+ApparentHorizon<SurfaceGeometry, AHFunction,
+                background_t>::calculate_spin_dimensionless(double a_area)
 {
     CH_assert(CH_SPACEDIM == 3);
     CH_TIME("ApparentHorizon::calculate_spin_dimensionless");
@@ -1352,7 +1362,7 @@ ApparentHorizon<SurfaceGeometry, AHFunction>::calculate_spin_dimensionless(
                     const auto coords = solver.m_interp.get_coords(idx);
                     const auto coords_cart =
                         solver.m_interp.get_cartesian_coords(idx);
-                    AHFunction func(data, coords, coords_cart);
+                    AHFunction func(data, coords, coords_cart, m_background);
                     auto &g = func.get_metric();
 
                     double dxdv[3];
@@ -1407,15 +1417,15 @@ ApparentHorizon<SurfaceGeometry, AHFunction>::calculate_spin_dimensionless(
 }
 #endif
 
-template <class SurfaceGeometry, class AHFunction>
-void ApparentHorizon<SurfaceGeometry, AHFunction>::calculate_ah_quantities(
-    double &area
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void ApparentHorizon<SurfaceGeometry, AHFunction,
+                     background_t>::calculate_ah_quantities(double &area
 #if GR_SPACEDIM == 3
-    ,
-    Tensor<1, double> &P
+                                                            ,
+                                                            Tensor<1, double> &P
 #if CH_SPACEDIM == 3
-    ,
-    Tensor<1, double> &J
+                                                            ,
+                                                            Tensor<1, double> &J
 #endif
 #endif
 )
@@ -1485,7 +1495,7 @@ void ApparentHorizon<SurfaceGeometry, AHFunction>::calculate_ah_quantities(
                 const auto coords = solver.m_interp.get_coords(idx);
                 const auto coords_cart =
                     solver.m_interp.get_cartesian_coords(idx);
-                AHFunction func(data, coords, coords_cart);
+                AHFunction func(data, coords, coords_cart, m_background);
                 Tensor<2, double> g = func.get_metric();
 #if GR_SPACEDIM == 3
                 Tensor<2, double> K = func.get_extrinsic_curvature();
@@ -1681,9 +1691,9 @@ void ApparentHorizon<SurfaceGeometry, AHFunction>::calculate_ah_quantities(
 #endif
 }
 
-template <class SurfaceGeometry, class AHFunction>
+template <class SurfaceGeometry, class AHFunction, class background_t>
 std::array<double, CH_SPACEDIM>
-ApparentHorizon<SurfaceGeometry, AHFunction>::calculate_center()
+ApparentHorizon<SurfaceGeometry, AHFunction, background_t>::calculate_center()
 {
     CH_TIME("ApparentHorizon::calculate_center");
 
@@ -1794,8 +1804,9 @@ ApparentHorizon<SurfaceGeometry, AHFunction>::calculate_center()
     return center;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void ApparentHorizon<SurfaceGeometry, AHFunction>::calculate_minmax_F() const
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void ApparentHorizon<SurfaceGeometry, AHFunction,
+                     background_t>::calculate_minmax_F() const
 {
     if (!get_converged())
         return;
@@ -1823,8 +1834,9 @@ void ApparentHorizon<SurfaceGeometry, AHFunction>::calculate_minmax_F() const
     m_min_F = global_min;
 }
 
-template <class SurfaceGeometry, class AHFunction>
-void ApparentHorizon<SurfaceGeometry, AHFunction>::calculate_average_F() const
+template <class SurfaceGeometry, class AHFunction, class background_t>
+void ApparentHorizon<SurfaceGeometry, AHFunction,
+                     background_t>::calculate_average_F() const
 {
     if (!get_converged())
         return;

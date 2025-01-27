@@ -6,10 +6,10 @@
 #ifndef WEYL4_HPP_
 #define WEYL4_HPP_
 
-#include "GHCRHS.hpp"
 #include "Cell.hpp"
 #include "Coordinates.hpp"
 #include "FourthOrderDerivatives.hpp"
+#include "GHCRHS.hpp"
 #include "Tensor.hpp"
 #include "TensorAlgebra.hpp"
 #include "UserVariables.hpp" //This files needs c_NUM - total number of components
@@ -51,8 +51,7 @@ class Weyl4
   public:
     // Use the variable definitions containing the needed quantities
     template <class data_t> using Vars = GHCVars::VarsWithGauge<data_t>;
-    template <class data_t>
-    using Diff2Vars = GHCVars::Diff2VarsNoGauge<data_t>;
+    template <class data_t> using Diff2Vars = GHCVars::Diff2VarsNoGauge<data_t>;
 
     //! Constructor of class Weyl4
     /*!

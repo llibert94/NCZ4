@@ -20,7 +20,8 @@ typedef PetscScalar *dmda_arr_t;
 #endif
 
 //! Helper class for ApparentHorizon class that manages all weird PETSc stuff
-template <class SurfaceGeometry, class AHFunction> class PETScAHSolver
+template <class SurfaceGeometry, class AHFunction, class background_t>
+class PETScAHSolver
 {
   public:
     using AHInterpolation = AHInterpolation_t<SurfaceGeometry, AHFunction>;
@@ -123,6 +124,8 @@ template <class SurfaceGeometry, class AHFunction> class PETScAHSolver
     Vec m_snes_soln;
     Vec m_snes_rhs;
     Mat m_snes_jac;
+
+    background_t m_background;
 
   private:
     //! set the default stencils of AHDerivData at position {u,v}

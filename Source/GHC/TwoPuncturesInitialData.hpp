@@ -8,9 +8,9 @@
 #ifndef TWOPUNCTURESINITIALDATA_HPP_
 #define TWOPUNCTURESINITIALDATA_HPP_
 
-#include "GHCVars.hpp"
 #include "Cell.hpp"
 #include "Coordinates.hpp"
+#include "GHCVars.hpp"
 #include "Tensor.hpp"
 #include "TensorAlgebra.hpp"
 #include "TwoPunctures.hpp"

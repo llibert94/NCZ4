@@ -14,7 +14,9 @@
 
 // Computes semi-isotropic Kerr solution as detailed in Liu, Etienne and Shapiro
 // 2010, arxiv gr-qc/1001.4077
-template <class data_t> void KerrBH::compute(Cell<data_t> current_cell) const
+template <class background_t>
+template <class data_t>
+void KerrBH<background_t>::compute(Cell<data_t> current_cell) const
 {
     using namespace CoordinateTransformations;
     using namespace TensorAlgebra;
@@ -61,13 +63,17 @@ template <class data_t> void KerrBH::compute(Cell<data_t> current_cell) const
         spherical_to_cartesian_U(spherical_shift, x, y, z);
 
     // now rotate tensors back to original coordinates
-    vars.g = transform_tensor_LL(cartesian_g, R);
+    vars.h = transform_tensor_LL(cartesian_g, R);
     vars.K = transform_tensor_LL(cartesian_K, R);
     vars.shift = transform_vector(cartesian_shift, R);
 
+    // add perturbation
+    // FOR(i)
+    // vars.shift[i] += 0.1 * exp(-(coords.get_radius() * coords.get_radius()));
+
     // Convert to BSSN vars
-    data_t detg = compute_determinant(vars.g);
-    auto g_UU = compute_inverse_sym(vars.g);
+    data_t detg = compute_determinant(vars.h);
+    auto g_UU = compute_inverse_sym(vars.h);
     data_t chi = pow(detg, -1. / 3.);
     // use a pre collapsed lapse, could also use analytic one
     // vars.lapse = kerr_lapse;
@@ -80,15 +86,23 @@ template <class data_t> void KerrBH::compute(Cell<data_t> current_cell) const
     // NB We stil need to set Gamma^i which is NON ZERO
     // but we do this via a separate class/compute function
     // as we need the gradients of the metric which are not yet available
+
+    Tensor<2, data_t> bg_g;
+    Tensor<2, Tensor<1, data_t>> bg_dg;
+    m_background.compute_g_and_dg(bg_g, bg_dg, coords);
+
+    FOR(i, j) vars.h[i][j] -= bg_g[i][j];
+
     current_cell.store_vars(vars);
 }
 
+template <class background_t>
 template <class data_t>
-void KerrBH::compute_kerr(Tensor<2, data_t> &spherical_g,
-                          Tensor<2, data_t> &spherical_K,
-                          Tensor<1, data_t> &spherical_shift,
-                          data_t &kerr_lapse,
-                          const Tensor<1, data_t> &coords) const
+void KerrBH<background_t>::compute_kerr(Tensor<2, data_t> &spherical_g,
+                                        Tensor<2, data_t> &spherical_K,
+                                        Tensor<1, data_t> &spherical_shift,
+                                        data_t &kerr_lapse,
+                                        const Tensor<1, data_t> &coords) const
 {
     // Kerr black hole params - mass M and spin a
     double M = m_params.mass;

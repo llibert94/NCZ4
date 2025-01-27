@@ -10,6 +10,7 @@
 #include "CH_Timer.H"
 
 // Other includes
+#include "Coordinates.hpp"
 #include "DimensionDefinitions.hpp" // make sure GR_SPACEDIM exists
 #include "TensorAlgebra.hpp"
 #include "UserVariables.hpp"
@@ -24,6 +25,7 @@
 // Predefined optimization functions
 /////////////////////////////////////////////////////////
 
+template <typename background_t = Minkowski>
 struct ExpansionFunction : AHFunctionDefault
 {
     //////////////////////////////////
@@ -57,12 +59,12 @@ struct ExpansionFunction : AHFunctionDefault
     // only require variables up to Kij (gij, Kij)
     // this assumes c_Pi comes after the last of Kij
     // (and like this the code is generic for 2D and 3D)
-    static ALWAYS_INLINE int vars_min() { return c_g11; }
+    static ALWAYS_INLINE int vars_min() { return c_h11; }
     static ALWAYS_INLINE int vars_max() { return c_Pi - 1; }
     // Derivatives required only for the metric component (gij)
     // this assumes c_K11 comes after the last gij
     // (and like this the code is generic for 2D and 3D)
-    static ALWAYS_INLINE int d1_vars_min() { return c_g11; }
+    static ALWAYS_INLINE int d1_vars_min() { return c_h11; }
     static ALWAYS_INLINE int d1_vars_max() { return c_K11 - 1; }
 
     ALWAYS_INLINE const Tensor<2, double> get_metric() const { return g; }
@@ -119,9 +121,21 @@ struct ExpansionFunction : AHFunctionDefault
 
     ExpansionFunction(const AHVarsData<int, double> &a_data,
                       const Tensor<1, double> &a_coords,
-                      const Tensor<1, double> &a_coords_cartesian)
+                      const Tensor<1, double> &a_coords_cartesian,
+                      background_t m_background)
     {
         CH_TIME("ExpansionFunction::calculate_data");
+
+        Tensor<2, double> bg_g;
+        Tensor<2, Tensor<1, double>> bg_dg;
+        IntVect integer_coords;
+        Coordinates<double> coords(integer_coords, 1.);
+        coords.x = a_coords_cartesian[0];
+        coords.y = a_coords_cartesian[1];
+#if CH_SPACEDIM == 3
+        coords.z = a_coords_cartesian[2];
+#endif
+        m_background.compute_g_and_dg(bg_g, bg_dg, coords);
 
         f = a_coords[CH_SPACEDIM - 1];
 
@@ -129,76 +143,37 @@ struct ExpansionFunction : AHFunctionDefault
         // *       GR-RELATED DATA
         // * ---------------------------
 
-        int gg[CH_SPACEDIM][CH_SPACEDIM];
+        int hh[CH_SPACEDIM][CH_SPACEDIM];
         int KK[CH_SPACEDIM][CH_SPACEDIM];
 
-        int comp_g = c_g11;
+        int comp_h = c_h11;
         int comp_K = c_K11;
         for (int i = 0; i < CH_SPACEDIM; ++i)
         {
             for (int j = i; j < CH_SPACEDIM; ++j)
             {
-                gg[i][j] = comp_g;
+                hh[i][j] = comp_h;
                 KK[i][j] = comp_K;
                 if (i != j)
                 {
-                    gg[j][i] = comp_g;
+                    hh[j][i] = comp_h;
                     KK[j][i] = comp_K;
                 }
-                ++comp_g;
+                ++comp_h;
                 ++comp_K;
             }
         }
 
-        FOR(i, j) { 
-	   g[i][j] = a_data.vars.at(gg[i][j]);
-       	   K[i][j] = a_data.vars.at(KK[i][j]);
-	   FOR(k) dg[i][j][k] = a_data.d1.at(gg[i][j])[k];
-	}
+        FOR(i, j)
+        {
+            g[i][j] = a_data.vars.at(hh[i][j]) + bg_g[i][j];
+            K[i][j] = a_data.vars.at(KK[i][j]);
+            FOR(k) dg[i][j][k] = a_data.d1.at(hh[i][j])[k] + bg_dg[i][j][k];
+        }
 
         g_UU = TensorAlgebra::compute_inverse_sym(g);
-	
-	trK = TensorAlgebra::compute_trace(K, g_UU);
 
-        // Reconstructing ADM variables
-        //Tensor<1, double, CH_SPACEDIM> dchi;
-
-        //FOR(i) { dchi[i] = a_data.d1.at(c_chi)[i]; }
-
-        /*for (int i = 0; i < CH_SPACEDIM; ++i)
-        {
-            for (int j = i; j < CH_SPACEDIM; ++j)
-            {
-                {
-                    const double gij = h_DD[i][j] / chi;
-                    g[i][j] = gij;
-                    g[j][i] = gij;
-                }
-                {
-                    const double g_UUij = h_UU[i][j] * chi;
-                    g_UU[i][j] = g_UUij;
-                    g_UU[j][i] = g_UUij;
-                }
-
-                {
-                    const double Aij = a_data.vars.at(A[i][j]);
-                    const double Kij = Aij / chi + trK * g[i][j] / GR_SPACEDIM;
-                    K[i][j] = Kij;
-                    K[j][i] = Kij;
-                }
-
-                for (int k = 0; k < CH_SPACEDIM; ++k)
-                {
-                    {
-                        const double dhij = a_data.d1.at(h[i][j])[k];
-                        const double dgijk =
-                            (dhij - (h_DD[i][j] * dchi[k]) / chi) / chi;
-                        dg[i][j][k] = dgijk;
-                        dg[j][i][k] = dgijk;
-                    }
-                }
-            }
-        }*/
+        trK = TensorAlgebra::compute_trace(K, g_UU);
 
         // part for higher dimensions that use Cartoon Method
         // Uli's paper does it for 3+1D (from 5D) - arxiv 1808.05834
@@ -340,6 +315,7 @@ struct ExpansionFunction : AHFunctionDefault
             chris[a][b][c] +=
                 0.5 * g_UU[a][d] * (dg[b][d][c] + dg[c][d][b] - dg[b][c][d]);
         }
+        // we need bg_dg here, otherwise that's not true now
 
         // covariant derivatrive of s_a to use for DS
         Tensor<2, double> Ds = {0.};
@@ -365,8 +341,8 @@ struct ChiContourFunction : AHFunctionDefault
     ChiContourFunction(const AHVarsData<int, double> &a_data,
                        const Tensor<1, double> &a_coords,
                        const Tensor<1, double> &a_coords_cartesian)
-    {
-        int gg[CH_SPACEDIM][CH_SPACEDIM];
+    {	    
+	int gg[CH_SPACEDIM][CH_SPACEDIM];
 
         int comp_g = c_g11;
         for (int i = 0; i < CH_SPACEDIM; ++i)
@@ -374,16 +350,16 @@ struct ChiContourFunction : AHFunctionDefault
             for (int j = i; j < CH_SPACEDIM; ++j)
             {
                 gg[i][j] = comp_g;
-                if (i != j) gg[j][i] = comp_g;
+                if (i != j)
+                    gg[j][i] = comp_g;
                 ++comp_g;
             }
         }
 
         FOR(i, j) g[i][j] = a_data.vars.at(gg[i][j]);
 
-	double detg = TensorAlgebra::compute_determinant_sym(g);
-	chi = pow(detg, -1. / 3.);
-
+        double detg = TensorAlgebra::compute_determinant_sym(g);
+        chi = pow(detg, -1. / 3.);
     }
 
     struct params

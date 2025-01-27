@@ -6,11 +6,12 @@
 #ifndef GHCRHS_HPP_
 #define GHCRHS_HPP_
 
-#include "GHCGeometry.hpp"
-#include "GHCVars.hpp"
 #include "Cell.hpp"
 #include "Coordinates.hpp"
 #include "FourthOrderDerivatives.hpp"
+#include "GHCGeometry.hpp"
+#include "GHCVars.hpp"
+#include "Minkowski.hpp"
 #include "MovingPunctureGauge.hpp"
 #include "Tensor.hpp"
 #include "TensorAlgebra.hpp"
@@ -38,7 +39,7 @@ struct GHC_base_params_t
  * gauge and damping parameters. It inherits from CCZ4_base_params_t and
  * gauge_t::params_t
  */
-template <class gauge_params_t = MovingPunctureGauge::params_t>
+template <class gauge_params_t = MovingPunctureGauge<>::params_t>
 struct GHC_params_t : public GHC_base_params_t, public gauge_params_t
 {
 };
@@ -49,12 +50,12 @@ struct GHC_params_t : public GHC_base_params_t, public gauge_params_t
  *handing it to a loop in the BoxLoops namespace. CCZ4RHS includes a struct
  *in its scope: GHCRHS::Vars (the GHC variables).
  **/
-template <class gauge_t = MovingPunctureGauge,
-          class deriv_t = FourthOrderDerivatives>
+template <class gauge_t = MovingPunctureGauge<>,
+          class deriv_t = FourthOrderDerivatives,
+          class background_t = Minkowski>
 class GHCRHS
 {
   public:
-
     using params_t = GHC_params_t<typename gauge_t::params_t>;
 
     /// GHC variables
@@ -69,18 +70,18 @@ class GHCRHS
     const gauge_t m_gauge;   //!< Class to compute gauge in rhs_equation
     const double m_sigma;    //!< Coefficient for Kreiss-Oliger dissipation
     const std::array<double, CH_SPACEDIM> m_center;
-    bool m_kerr_bg;
+    const background_t m_background;
     double m_cosmological_constant;
     const deriv_t m_deriv;
 
   public:
     /// Constructor
     GHCRHS(
-        params_t a_params,            //!< The CCZ4 parameters
-        double a_dx,                  //!< The grid spacing
-        double a_sigma,               //!< Kreiss-Oliger dissipation coefficient
-	const std::array<double, CH_SPACEDIM> a_center,
-	bool a_kerr_bg,
+        params_t a_params, //!< The CCZ4 parameters
+        double a_dx,       //!< The grid spacing
+        double a_sigma,    //!< Kreiss-Oliger dissipation coefficient
+        const std::array<double, CH_SPACEDIM> a_center,
+        background_t a_background,
         double a_cosmological_constant = 0 //!< Value of the cosmological const.
     );
 
@@ -110,8 +111,7 @@ class GHCRHS
             &d2, //!< The second derivative the variables
         const vars_t<data_t>
             &advec, //!< The advection derivatives of the variables
-	const Coordinates<data_t> &coords
-    ) const;
+        const Coordinates<data_t> &coords) const;
 };
 
 #include "GHCRHS.impl.hpp"

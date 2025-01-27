@@ -21,11 +21,13 @@ class PunctureBoxesTaggingCriterion
     const std::vector<std::array<double, CH_SPACEDIM>> &m_puncture_coords;
 
   public:
-    PunctureBoxesTaggingCriterion(const double dx, const int a_level,
-                               const int a_max_level,
-                               const std::vector<std::array<double, CH_SPACEDIM>> &a_puncture_coords,
+    PunctureBoxesTaggingCriterion(
+        const double dx, const int a_level, const int a_max_level,
+        const std::vector<std::array<double, CH_SPACEDIM>> &a_puncture_coords,
         const std::vector<double> a_puncture_masses = {0.5, 0.5})
-        : m_dx(dx), m_level(a_level), m_max_level(a_max_level), m_puncture_masses(a_puncture_masses), m_puncture_coords(a_puncture_coords){};
+        : m_dx(dx), m_level(a_level), m_max_level(a_max_level),
+          m_puncture_masses(a_puncture_masses),
+          m_puncture_coords(a_puncture_coords){};
 
     template <class data_t> void compute(Cell<data_t> current_cell) const
     {
@@ -33,23 +35,24 @@ class PunctureBoxesTaggingCriterion
         // make sure the inner part is regridded around the horizon
         // take L as the length of full grid, so tag inner 1/2
         // of it, which means inner \pm L/4
-	// we want each level to be double the innermost one in size
+        // we want each level to be double the innermost one in size
         const double factor = pow(2.0, m_max_level - m_level - 1);
         // loop over puncture masses
         for (int ipuncture = 0; ipuncture < m_puncture_masses.size();
-                 ++ipuncture)
+             ++ipuncture)
         {
             // where am i?
             const Coordinates<data_t> coords(current_cell, m_dx,
-                                                 m_puncture_coords[ipuncture]);
+                                             m_puncture_coords[ipuncture]);
             const data_t max_abs_xy = simd_max(abs(coords.x), abs(coords.y));
             const data_t max_abs_xyz = simd_max(max_abs_xy, abs(coords.z));
-            auto regrid = simd_compare_lt(max_abs_xyz, 1.5 * factor * m_puncture_masses[ipuncture]);
+            auto regrid = simd_compare_lt(
+                max_abs_xyz, 1.5 * factor * m_puncture_masses[ipuncture]);
             criterion = simd_conditional(regrid, 100.0, criterion);
-            }
+        }
 
         // Write back into the flattened Chombo box
-        current_cell.store_vars(criterion, 0);       
+        current_cell.store_vars(criterion, 0);
     }
 };
 

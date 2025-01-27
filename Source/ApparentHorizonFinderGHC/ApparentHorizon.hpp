@@ -19,7 +19,8 @@
 // 4+1 cartoon-reduced to 2+1)
 //! AHFunction defines the optimizing function (see AHFunction.hpp for
 //! expansion example calculation)
-template <class SurfaceGeometry, class AHFunction> class ApparentHorizon
+template <class SurfaceGeometry, class AHFunction, class background_t>
+class ApparentHorizon
 {
     using AHInterpolation = AHInterpolation_t<SurfaceGeometry, AHFunction>;
     using AHParams = AHParams_t<AHFunction>;
@@ -53,7 +54,8 @@ template <class SurfaceGeometry, class AHFunction> class ApparentHorizon
     const std::array<double, CH_SPACEDIM> &get_origin() const;
     const std::array<double, CH_SPACEDIM> &get_center() const;
     const AHInterpolation &get_ah_interp() const;
-    PETScAHSolver<SurfaceGeometry, AHFunction> &get_petsc_solver();
+    PETScAHSolver<SurfaceGeometry, AHFunction, background_t> &
+    get_petsc_solver();
 
     // set origin to whatever you want (e.g. punctures) before solving if you
     // want, otherwise we use the last center or the estimate next center
@@ -180,7 +182,9 @@ template <class SurfaceGeometry, class AHFunction> class ApparentHorizon
     // before 'solve'
     bool origin_already_updated;
 
-    PETScAHSolver<SurfaceGeometry, AHFunction> solver;
+    background_t m_background;
+
+    PETScAHSolver<SurfaceGeometry, AHFunction, background_t> solver;
 };
 
 #include "ApparentHorizon.impl.hpp"
