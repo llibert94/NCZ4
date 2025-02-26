@@ -1,0 +1,192 @@
+/* GRChombo
+ * Copyright 2012 The GRChombo collaboration.
+ * Please refer to LICENSE in GRChombo's root directory.
+ */
+
+#include "BlackBraneAdSLevel.hpp"
+#include "BoxLoops.hpp"
+#include "ComputePack.hpp"
+#include "ConformalDiagnostics.hpp"
+#include "FixedGridsTaggingCriterion.hpp"
+#include "GHCRHS.hpp"
+#include "NanCheck.hpp"
+#include "NewConstraints.hpp"
+#include "PositiveChiAndAlpha.hpp"
+#include "SetValue.hpp"
+#include "SixthOrderDerivatives.hpp"
+
+// Initial data
+#include "GammaCalculator.hpp"
+#include "PoincareAdS.hpp"
+#include "KerrSchildAdS.hpp"
+//#include "Minkowski.hpp"
+
+#include "ADMQuantities.hpp"
+#include "ADMQuantitiesExtraction.hpp"
+
+void BlackBraneAdSLevel::specificAdvance()
+{
+    //Minkowski mink;
+    PoincareAdS background(m_p.bg_params, m_dx); // background
+
+    // Enforce positive chi and alpha
+    BoxLoops::loop(PositiveChiAndAlpha<PoincareAdS>(m_dx, m_p.center,
+                                                     background, m_p.min_chi,
+                                                     m_p.min_lapse),
+                   m_state_new, m_state_new, INCLUDE_GHOST_CELLS);
+
+    // Check for nan's
+    if (m_p.nan_check)
+        BoxLoops::loop(
+            NanCheck(m_dx, m_p.center, "NaNCheck in specific Advance"),
+            m_state_new, m_state_new, EXCLUDE_GHOST_CELLS, disable_simd());
+}
+
+void BlackBraneAdSLevel::initialData()
+{
+    CH_TIME("BlackBraneAdSLevel::initialData");
+    if (m_verbosity)
+        pout() << "BlackBraneAdSLevel::initialData " << m_level << endl;
+
+    //Minkowski mink;
+    PoincareAdS background(m_p.bg_params, m_dx); // background
+
+    // First set everything to zero then calculate initial data  Get the Kerr
+    // solution in the variables, then calculate the \tilde\Gamma^i numerically
+    // as these are non zero and not calculated in the Kerr ICs
+    BoxLoops::loop(make_compute_pack(SetValue(0.),
+                                     KerrSchildAdS<PoincareAdS>(m_p.black_brane_params, m_dx,
+                                                          background)),
+                   m_state_new, m_state_new, INCLUDE_GHOST_CELLS);
+
+    fillAllGhosts();
+    BoxLoops::loop(GammaCalculator<PoincareAdS>(m_dx, m_p.center, background),
+                   m_state_new, m_state_new, EXCLUDE_GHOST_CELLS);
+
+#ifdef USE_AHFINDER
+    // Diagnostics needed for AHFinder
+    Constraints<PoincareAdS> my_constraints(m_dx, m_p.center, background,
+                                             c_Ham, Interval(c_Mom1, c_Mom3));
+    ConformalDiagnostics<PoincareAdS> my_diagnostics(
+        m_dx, m_p.center, background, Interval(c_g11, c_g33), c_chi);
+    BoxLoops::loop(make_compute_pack(my_constraints, my_diagnostics),
+                   m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
+#endif
+}
+
+#ifdef CH_USE_HDF5
+void BlackBraneAdSLevel::prePlotLevel()
+{
+#ifdef USE_AHFINDER
+    // already calculated in 'specificPostTimeStep'
+    if (m_bh_amr.m_ah_finder.need_diagnostics(m_dt, m_time))
+        return;
+#endif
+
+    fillAllGhosts();
+    //Minkowski mink;
+    PoincareAdS background(m_p.bg_params, m_dx); // background
+    Constraints<PoincareAdS> my_constraints(m_dx, m_p.center, background,
+                                             c_Ham, Interval(c_Mom1, c_Mom3));
+    ConformalDiagnostics<PoincareAdS> my_diagnostics(
+        m_dx, m_p.center, background, Interval(c_g11, c_g33), c_chi);
+    BoxLoops::loop(make_compute_pack(my_constraints, my_diagnostics),
+                   m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
+}
+#endif /* CH_USE_HDF5 */
+
+void BlackBraneAdSLevel::specificEvalRHS(GRLevelData &a_soln, GRLevelData &a_rhs,
+                                  const double a_time)
+{
+    //Minkowski mink;
+    PoincareAdS background(m_p.bg_params, m_dx); // background
+
+    // Enforce the trace free A_ij condition and positive chi and alpha
+    BoxLoops::loop(PositiveChiAndAlpha<PoincareAdS>(m_dx, m_p.center,
+                                                     background, m_p.min_chi,
+                                                     m_p.min_lapse),
+                   a_soln, a_soln, INCLUDE_GHOST_CELLS);
+
+    // Calculate CCZ4 right hand side
+    if (m_p.max_spatial_derivative_order == 4)
+    {
+        BoxLoops::loop(
+            GHCRHS<MovingPunctureGauge<PoincareAdS>, FourthOrderDerivatives,
+                   PoincareAdS>(m_p.ghc_params, m_dx, m_p.sigma, m_p.center,
+                                 background),
+            a_soln, a_rhs, EXCLUDE_GHOST_CELLS);
+    }
+    else if (m_p.max_spatial_derivative_order == 6)
+    {
+        BoxLoops::loop(
+            GHCRHS<MovingPunctureGauge<PoincareAdS>, SixthOrderDerivatives,
+                   PoincareAdS>(m_p.ghc_params, m_dx, m_p.sigma, m_p.center,
+                                 background),
+            a_soln, a_rhs, EXCLUDE_GHOST_CELLS);
+    }
+}
+
+void BlackBraneAdSLevel::specificUpdateODE(GRLevelData &a_soln,
+                                    const GRLevelData &a_rhs, Real a_dt)
+{
+}
+
+void BlackBraneAdSLevel::preTagCells() {}
+
+void BlackBraneAdSLevel::computeTaggingCriterion(
+    FArrayBox &tagging_criterion, const FArrayBox &current_state,
+    const FArrayBox &current_state_diagnostics)
+{
+    BoxLoops::loop(FixedGridsTaggingCriterion(m_dx, m_level, m_p.L, m_p.center),
+                   current_state, tagging_criterion);
+}
+
+void BlackBraneAdSLevel::specificPostTimeStep()
+{
+    CH_TIME("BlackBraneAdSLevel::specificPostTimeStep");
+
+    //Minkowski mink;
+    PoincareAdS background(m_p.bg_params, m_dx); // background
+
+    // Do the extraction on the min extraction level
+    if (m_p.activate_extraction == 1)
+    {
+        int min_level = m_p.extraction_params.min_extraction_level();
+        bool calculate_adm = at_level_timestep_multiple(min_level);
+        if (calculate_adm)
+        {
+            // Populate the ADM Mass and Spin values on the grid
+            fillAllGhosts();
+            BoxLoops::loop(
+                ADMQuantities<PoincareAdS>(m_p.extraction_params.center, m_dx,
+                                            background, c_Madm, c_Jadm),
+                m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
+
+            if (m_level == min_level)
+            {
+                CH_TIME("ADMExtraction");
+                // Now refresh the interpolator and do the interpolation
+                m_gr_amr.m_interpolator->refresh();
+                ADMQuantitiesExtraction my_extraction(
+                    m_p.extraction_params, m_dt, m_time, m_restart_time, c_Madm,
+                    c_Jadm);
+                my_extraction.execute_query(m_gr_amr.m_interpolator);
+            }
+        }
+    }
+#ifdef USE_AHFINDER
+    // if print is on and there are Diagnostics to write, calculate them!
+    if (m_bh_amr.m_ah_finder.need_diagnostics(m_dt, m_time))
+    {
+        fillAllGhosts();
+        Constraints<PoincareAdS> my_constraints(
+            m_dx, m_p.center, background, c_Ham, Interval(c_Mom1, c_Mom3));
+        ConformalDiagnostics<PoincareAdS> my_diagnostics(
+            m_dx, m_p.center, background, Interval(c_g11, c_g33), c_chi);
+        BoxLoops::loop(make_compute_pack(my_constraints, my_diagnostics),
+                       m_state_new, m_state_diagnostics, EXCLUDE_GHOST_CELLS);
+    }
+    if (m_p.AH_activate && m_level == m_p.AH_params.level_to_run)
+        m_bh_amr.m_ah_finder.solve(m_dt, m_time, m_restart_time);
+#endif
+}

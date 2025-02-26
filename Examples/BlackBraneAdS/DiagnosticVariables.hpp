@@ -1,0 +1,59 @@
+/* GRChombo
+ * Copyright 2012 The GRChombo collaboration.
+ * Please refer to LICENSE in GRChombo's root directory.
+ */
+
+#ifndef DIAGNOSTICVARIABLES_HPP
+#define DIAGNOSTICVARIABLES_HPP
+
+// assign an enum to each variable
+enum
+{
+    c_Ham,
+
+    c_Mom1,
+    c_Mom2,
+    c_Mom3,
+
+    c_Madm,
+    c_Jadm,
+
+    c_chi,
+
+    c_CGam1,
+    c_CGam2,
+    c_CGam3,
+
+    c_Z1,
+    c_Z2,
+    c_Z3,
+
+    c_g11,
+    c_g12,
+    c_g13,
+    c_g22,
+    c_g23,
+    c_g33,
+
+    NUM_DIAGNOSTIC_VARS
+};
+
+namespace DiagnosticVariables
+{
+static const std::array<std::string, NUM_DIAGNOSTIC_VARS> variable_names = {
+    "Ham",
+
+    "Mom1",  "Mom2",  "Mom3",
+
+    "M_adm", "J_adm",
+
+    "chi",
+
+    "CGam1", "CGam2", "CGam3",
+
+    "Z1",    "Z2",    "Z3",
+
+    "g11",   "g12",   "g13",   "g22", "g23", "g33"};
+}
+
+#endif /* DIAGNOSTICVARIABLES_HPP */

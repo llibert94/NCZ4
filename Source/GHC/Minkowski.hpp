@@ -33,7 +33,7 @@ class Minkowski
     /// it is only done once on setup as the BG is fixed
     template <class data_t> void compute(Cell<data_t> current_cell) const
     {
-        const Coordinates<data_t> coords(current_cell, m_dx, m_params.center);
+        const Coordinates<data_t> coords(current_cell);//, m_dx, m_params.center);
         Vars<data_t> metric_vars;
         Vars<Tensor<1, data_t>> d1;
         Diff2Vars<Tensor<2, data_t>> d2;

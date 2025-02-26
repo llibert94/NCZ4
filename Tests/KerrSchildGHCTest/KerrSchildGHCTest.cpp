@@ -23,10 +23,15 @@
 // Problem specific for tests
 // #include "AssignFixedBGtoBSSNVars.hpp"
 // #include "CCZ4ScalarField.hpp"
-#include "ExcisionTest.hpp"
+// #include "ExcisionTest.hpp"
 #include "GHCRHS.hpp"
 #include "GammaCalculator.hpp"
-#include "KerrSchild.hpp"
+
+//#include "KerrSchild.hpp"
+#include "KerrSchildAdS.hpp"
+#include "PoincareAdS.hpp"
+
+
 // #include "MatterCCZ4.hpp"
 // #include "MatterCCZ4RHS.hpp"
 // #include "MatterEvolution.hpp"
@@ -76,27 +81,38 @@ int main()
         const double dx = length / (N_GRID);
         const double center = length / 2.0;
         const std::array<double, CH_SPACEDIM> center_vector = {center, center,
-                                                               center};
+                                                               center+1.};
 
         // Background
-        Minkowski mink(dx);
+        /*Minkowski mink(dx);
         KerrSchild<>::params_t bg_params;
         bg_params.mass = 1.0;
         bg_params.spin = 0.;
         bg_params.center = center_vector;
-        KerrSchild<> background(bg_params, dx, mink);
+        KerrSchild<> background(bg_params, dx, mink);*/
+
+	PoincareAdS::params_t bg_params;
+        bg_params.length = 10.0;
+	bg_params.center = center_vector;
+        PoincareAdS background(bg_params, dx);
 
         // Initial conditions
-        KerrSchild<KerrSchild<>>::params_t kerr_params;
+        /*KerrSchild<KerrSchild<>>::params_t kerr_params;
         kerr_params.mass = 2.0;
         kerr_params.spin = 0.5;
         kerr_params.center = center_vector;
-        KerrSchild<KerrSchild<>> kerr_schild(kerr_params, dx, background);
+        KerrSchild<KerrSchild<>> kerr_schild(kerr_params, dx, background);*/
+
+	KerrSchildAdS<PoincareAdS>::params_t kerr_params;
+        kerr_params.length = 10.0;
+        kerr_params.z0 = 1.0;
+	kerr_params.center = center_vector;
+        KerrSchildAdS<PoincareAdS> kerr_schild(kerr_params, dx, background);
 
         BoxLoops::loop(kerr_schild, fixedbg_fab, fixedbg_fab);
         // used temp single ghosted box to avoid nans at boundaries in Gamma^i
         BoxLoops::loop(
-            GammaCalculator<KerrSchild<>>(dx, center_vector, background),
+            GammaCalculator<PoincareAdS>(dx, center_vector, background),
             fixedbg_fab, deriv_fixedbg_fab);
         fixedbg_fab += deriv_fixedbg_fab;
 
@@ -108,8 +124,8 @@ int main()
         // Calculate the RHS using finite differences for the derivs
         const double G_Newton = 0.0; // ignore backreaction
         const double sigma = 0.0;    // no kreiss oliger
-        GHCRHS<MovingPunctureGauge<KerrSchild<>>, FourthOrderDerivatives,
-               KerrSchild<>>::params_t ghc_params;
+        GHCRHS<MovingPunctureGauge<PoincareAdS>, FourthOrderDerivatives,
+               PoincareAdS>::params_t ghc_params;
         ghc_params.kappa1 = 0.0;
         ghc_params.kappa2 = 0.0;
         // ghc_params.kappa3 = 0.0;
@@ -117,8 +133,8 @@ int main()
         ghc_params.shift_Gamma_coeff = 0.0;
         ghc_params.eta = 0.0;
 
-        GHCRHS<MovingPunctureGauge<KerrSchild<>>, FourthOrderDerivatives,
-               KerrSchild<>>
+        GHCRHS<MovingPunctureGauge<PoincareAdS>, FourthOrderDerivatives,
+               PoincareAdS>
             my_evolution(ghc_params, dx, sigma, center_vector, background);
         BoxLoops::loop(my_evolution, fixedbg_fab, fixedbg_rhs_fab);
 
@@ -127,10 +143,10 @@ int main()
 
         // Excise the centre within the horizon where there are always large
         // values
-        BoxLoops::loop(
-            ExcisionTest<KerrSchild<>>(dx, center_vector, background), rhs_fab,
+       /* BoxLoops::loop(
+            ExcisionTest<PoincareAdS>(dx, center_vector, background), rhs_fab,
             rhs_fab, disable_simd());
-
+*/
         // Output slice of data on lowest res, useful for debugging
         // activate by setting debug_plots to true above
         if (ires == 0 && debug_plots_on)
