@@ -77,8 +77,21 @@ template <class background_t = Minkowski> class MovingPunctureGauge
         auto g_UU = compute_inverse_sym(phys_g);
         Tensor<2, Tensor<1, data_t>> d1_phys_g;
 	FOR(i, j, k) d1_phys_g[i][j][k] = d1.h[i][j][k] + bg_dg[i][j][k];
-	auto phys_chris = compute_christoffel(d1_phys_g, g_UU);
+	//auto phys_chris = compute_christoffel(d1_phys_g, g_UU);
+	
+	auto diff_chris = compute_christoffel(d1.h, g_UU);
 
+    	// this will be needed (as all the places where bg_chris appears) until we
+    	// use directly the bg covariant derivative of the vars rather than their
+    	// partial derivative
+
+    	FOR(i, j, k, l, m)
+    	{
+            diff_chris.contracted[i] -=
+            	bg_chris.ULL[l][j][k] * vars.h[m][l] * g_UU[i][m] * g_UU[j][k];
+    	}
+
+	
         rhs.lapse =
             m_params.lapse_advec_coeff * advec.lapse +
             (m_params.lapse_coeff * pow(vars.lapse, m_params.lapse_power)) *
@@ -88,7 +101,7 @@ template <class background_t = Minkowski> class MovingPunctureGauge
             // With conformal gamma
             rhs.shift[i] = m_params.shift_advec_coeff * advec.shift[i] +
                            m_params.shift_Gamma_coeff *
-                               phys_chris.contracted[i] / chi_regularised -
+                               diff_chris.contracted[i] / chi_regularised -
                            m_params.eta * vars.shift[i];
             FOR(j, k, l)
             {

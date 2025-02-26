@@ -64,11 +64,16 @@ template <class background_t = Minkowski> class KerrSchildAdS
 
         Tensor<2, data_t> bg_g;
         Tensor<2, Tensor<1, data_t>> bg_dg;
+	Tensor<2, Tensor<1, Tensor<1, data_t>>> bg_d2g;
         m_background.compute_g_and_dg(bg_g, bg_dg, coords);
+	m_background.compute_d2g(bg_dg, bg_d2g, coords);
 
         FOR(i, j) {
 	   metric_vars.h[i][j] -= bg_g[i][j];
-	   FOR(k) d1.h[i][j][k] -= bg_dg[i][j][k];
+	   FOR(k) {
+		d1.h[i][j][k] -= bg_dg[i][j][k];
+		FOR(l) d2.h[i][j][k][l] -= bg_d2g[i][j][k][l];
+	   }
 	}
 
         FOR(i) metric_vars.B[i] = 0.;
@@ -77,41 +82,6 @@ template <class background_t = Minkowski> class KerrSchildAdS
         // but we do this via a separate class/compute function
         // as we need the gradients of the metric which are not yet available
         current_cell.store_vars(metric_vars);
-    }
-
-    template <class data_t>
-    void compute_g_and_dg(Tensor<2, data_t> &g,
-                          Tensor<2, Tensor<1, data_t>> &dg,
-                          const Coordinates<data_t> &coords) const
-    {
-        const double L = m_params.length;
-	const double z0 = m_params.radius;
-
-        // work out where we are on the grid
-	const double z = coords.z;
-        const double z_reg = simd_max(1e-6, z);
-
-        // find the H and el quantities (el decomposed into space and time)
-        data_t fac = L * L / (z_reg * z_reg);
-	data_t H = pow(z / z0, GR_SPACEDIM + 1.);
-
-        const Tensor<1, data_t> el = {0., 0., 1.};
-	Tensor<1, data_t> dHdx;
-
-        using namespace TensorAlgebra;
-
-        FOR(i) dHdx[i] = (GR_SPACEDIM + 1.) / z_reg * H * delta(i, 2);
-        
-        FOR(i, j)
-        {
-            g[i][j] = fac * (delta(i, j) + H * el[i] * el[j]);
-        }
-
-        FOR(i, j, k)
-        {
-            dg[i][j][k] = -2. / z_reg * delta(k, 2) * g[i][j] + 
-                	  el[i] * el[j] * dHdx[k];
-        }
     }
 
     // Kerr Schild solution
@@ -171,7 +141,7 @@ template <class background_t = Minkowski> class KerrSchildAdS
 
         FOR(i, j, k, l)
         {
-            d2.h[i][j][k][l] = -2. / z_reg* delta(k, 2) * (2. * d1.h[i][j][l] +  delta(l, 2) / z_reg * vars.h[i][j]) + 
+            d2.h[i][j][k][l] = -2. / z_reg * delta(k, 2) * (2. * d1.h[i][j][l] +  delta(l, 2) / z_reg * vars.h[i][j]) + 
 		    fac * el[i] * el[j] * d2Hdx2[k][l];
         }
 

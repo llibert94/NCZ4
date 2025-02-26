@@ -91,7 +91,10 @@ void KerrBH<background_t>::compute(Cell<data_t> current_cell) const
     Tensor<2, Tensor<1, data_t>> bg_dg;
     m_background.compute_g_and_dg(bg_g, bg_dg, coords);
 
-    FOR(i, j) vars.h[i][j] -= bg_g[i][j];
+    FOR(i, j) {
+	vars.h[i][j] -= bg_g[i][j];
+	d1.h[i][j][k] -= bg_dg[i][j][k];
+    }
 
     current_cell.store_vars(vars);
 }

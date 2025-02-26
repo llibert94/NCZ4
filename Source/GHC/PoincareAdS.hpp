@@ -86,6 +86,24 @@ class PoincareAdS
         }
     }
 
+    template <class data_t>
+    void compute_d2g(Tensor<2, Tensor<1, data_t>> &dg,
+		    	  Tensor<2, Tensor<1, Tensor<1, data_t>>> &d2g,
+                          const Coordinates<data_t> &coords) const
+    {
+        const double L = m_params.length;
+
+        // work out where we are on the grid
+        const double z = coords.z;
+
+        using namespace TensorAlgebra;
+        const double z_reg = simd_max(1e-6, z);
+        FOR(i, j, k, l)
+        {
+            d2g[i][j][k][l] = -3. * delta(l, 2) * dg[i][j][k] / z_reg;
+        }
+    }
+
     // Kerr Schild solution
     template <class data_t, template <typename> class vars_t,
               template <typename> class diff2_vars_t>

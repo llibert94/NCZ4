@@ -68,7 +68,11 @@ template <class background_t = Minkowski> class KerrSchild
         Tensor<2, Tensor<1, data_t>> bg_dg;
         m_background.compute_g_and_dg(bg_g, bg_dg, coords);
 
-        FOR(i, j) metric_vars.h[i][j] -= bg_g[i][j];
+        FOR(i, j) 
+	{
+	    metric_vars.h[i][j] -= bg_g[i][j];
+	    FOR(k) d1.h[i][j][k] -= bg_dg[i][j][k];
+	}
 
         FOR(i) metric_vars.B[i] = 0.;
         // Populate the variables on the grid
